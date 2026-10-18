@@ -6,12 +6,14 @@ function App() {
   const [promotions, setPromotions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [regions, setRegions] = useState([]);
+  const [favorites, setFavorites] = useState([]); // ID збережених акцій
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedRegion, setSelectedRegion] = useState(null);
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Стан користувача (зчитуємо з localStorage при завантаженні)
+  // Стан користувача
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
@@ -24,14 +26,14 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
 
-  // Форма авторизації
+  // Поля авторизації
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authRole, setAuthRole] = useState('user');
   const [authError, setAuthError] = useState('');
 
-  // Форми додавання
+  // Поля додавання категорій/міст
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('🏷️');
   const [newRegionName, setNewRegionName] = useState('');
@@ -41,6 +43,7 @@ function App() {
     axios.get('http://localhost:5000/api/regions').then(res => setRegions(res.data));
   }, []);
 
+  // Отримання списку акцій
   useEffect(() => {
     setLoading(true);
     let url = 'http://localhost:5000/api/promotions?';
@@ -52,7 +55,51 @@ function App() {
       .catch(() => setLoading(false));
   }, [selectedCategory, selectedRegion]);
 
-  // Обробка входу / реєстрації
+  // Завантаження обраних акцій користувача
+  useEffect(() => {
+    if (currentUser && token) {
+      axios.get('http://localhost:5000/api/favorites', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => {
+          // Зберігаємо масив ID обраних акцій
+          const favIds = res.data.map(item => item.promotion_id);
+          setFavorites(favIds);
+        })
+        .catch(err => console.error('Помилка завантаження обраного:', err));
+    } else {
+      setFavorites([]);
+    }
+  }, [currentUser, token]);
+
+  // Перемикання Обраного (додати / видалити)
+  const toggleFavorite = (promoId) => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const isFav = favorites.includes(promoId);
+
+    if (isFav) {
+      // Видалення з обраного
+      axios.delete(`http://localhost:5000/api/favorites/${promoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(() => {
+          setFavorites(favorites.filter(id => id !== promoId));
+        });
+    } else {
+      // Додавання в обране
+      axios.post('http://localhost:5000/api/favorites', { promotion_id: promoId }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(() => {
+          setFavorites([...favorites, promoId]);
+        });
+    }
+  };
+
   const handleAuth = (e) => {
     e.preventDefault();
     setAuthError('');
@@ -83,6 +130,8 @@ function App() {
     setToken('');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    setFavorites([]);
+    setShowOnlyFavorites(false);
   };
 
   const handleAddCategory = (e) => {
@@ -108,11 +157,18 @@ function App() {
 
   const activeRegionObj = regions.find(r => r.id === selectedRegion);
 
+  // Фільтрація акцій (за всіма фільтрами + режим "Обране")
+  const displayedPromotions = showOnlyFavorites
+    ? promotions.filter(p => favorites.includes(p.id))
+    : promotions;
+
   return (
     <div className="container">
       {/* Header */}
       <header className="header">
-        <h1 className="logo">Promo</h1>
+        <h1 className="logo" style={{ cursor: 'pointer' }} onClick={() => setShowOnlyFavorites(false)}>
+          LocaSale 🏷️
+        </h1>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button className="region-select-btn" onClick={() => setShowRegionModal(true)}>
@@ -122,7 +178,7 @@ function App() {
           {currentUser ? (
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                👤 {currentUser.full_name} {currentUser.role === 'admin' ? '🛡️ (Адмін)' : ''}
+                👤 {currentUser.full_name} {currentUser.role === 'admin' ? '🛡️' : ''}
               </span>
               <button className="btn-secondary" onClick={handleLogout}>Вийти</button>
             </div>
@@ -134,20 +190,30 @@ function App() {
         </div>
       </header>
 
-      {/* Категорії */}
+      {/* Панель категорій */}
       <div className="categories-bar">
         <button
-          className={`category-pill ${selectedCategory === null ? 'active' : ''}`}
-          onClick={() => setSelectedCategory(null)}
+          className={`category-pill ${selectedCategory === null && !showOnlyFavorites ? 'active' : ''}`}
+          onClick={() => { setSelectedCategory(null); setShowOnlyFavorites(false); }}
         >
           ✨ Всі
         </button>
 
+        {currentUser && (
+          <button
+            className={`category-pill ${showOnlyFavorites ? 'active' : ''}`}
+            style={{ backgroundColor: showOnlyFavorites ? '#ef4444' : '', color: showOnlyFavorites ? '#fff' : '' }}
+            onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+          >
+            ❤️ Моє обране ({favorites.length})
+          </button>
+        )}
+
         {categories.map(cat => (
           <button
             key={cat.id}
-            className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
-            onClick={() => setSelectedCategory(cat.id)}
+            className={`category-pill ${selectedCategory === cat.id && !showOnlyFavorites ? 'active' : ''}`}
+            onClick={() => { setSelectedCategory(cat.id); setShowOnlyFavorites(false); }}
           >
             {cat.icon} {cat.name}
           </button>
@@ -159,26 +225,58 @@ function App() {
       </div>
 
       <main>
-        <h2>Гарячі акції {activeRegionObj ? `у місті ${activeRegionObj.name}` : ''} 🔥</h2>
+        <h2>
+          {showOnlyFavorites ? '❤️ Ваші збережені акції' : `Гарячі акції ${activeRegionObj ? `у місті ${activeRegionObj.name}` : ''} 🔥`}
+        </h2>
 
         {loading ? (
           <p>Завантаження...</p>
-        ) : promotions.length === 0 ? (
-          <p style={{ color: '#64748b' }}>Наразі немає активних акцій за цими фільтрами.</p>
+        ) : displayedPromotions.length === 0 ? (
+          <p style={{ color: '#64748b' }}>
+            {showOnlyFavorites
+              ? 'У вас поки немає збережених акцій. Натисніть ❤️ на картці акції, щоб додати її сюди!'
+              : 'Наразі немає активних акцій за цими фільтрами.'}
+          </p>
         ) : (
           <div className="grid">
-            {promotions.map((promo) => (
-              <div key={promo.id} className="card">
-                <div>
-                  <span className="badge">{promo.discount_value}</span>
-                  <h3 className="card-title">{promo.title}</h3>
-                  <p className="card-desc">{promo.description}</p>
-                  <div className="place-info">🏬 {promo.place_name}</div>
-                  <div className="address">📍 {promo.address} ({promo.region_name})</div>
+            {displayedPromotions.map((promo) => {
+              const isFav = favorites.includes(promo.id);
+              return (
+                <div key={promo.id} className="card" style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => toggleFavorite(promo.id)}
+                    title={isFav ? "Видалити з обраного" : "Додати в обране"}
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '36px',
+                      height: '36px',
+                      fontSize: '18px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {isFav ? '❤️' : '🤍'}
+                  </button>
+
+                  <div>
+                    <span className="badge">{promo.discount_value}</span>
+                    <h3 className="card-title" style={{ paddingRight: '30px' }}>{promo.title}</h3>
+                    <p className="card-desc">{promo.description}</p>
+                    <div className="place-info">🏬 {promo.place_name}</div>
+                    <div className="address">📍 {promo.address} ({promo.region_name})</div>
+                  </div>
+                  <button className="button">Отримати пропозицію</button>
                 </div>
-                <button className="button">Отримати пропозицію</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
@@ -188,9 +286,7 @@ function App() {
         <div className="modal-overlay">
           <div className="modal">
             <h3>{isRegisterMode ? 'Створення акаунту' : 'Вхід у систему'}</h3>
-
             {authError && <p style={{ color: '#ff6b6b', fontSize: '14px' }}>{authError}</p>}
-
             <form onSubmit={handleAuth}>
               {isRegisterMode && (
                 <>
@@ -213,7 +309,6 @@ function App() {
                   </select>
                 </>
               )}
-
               <input
                 className="input-field"
                 type="email"
@@ -230,7 +325,6 @@ function App() {
                 onChange={e => setAuthPassword(e.target.value)}
                 required
               />
-
               <div className="modal-actions" style={{ flexDirection: 'column', gap: '8px' }}>
                 <button type="submit" className="button">
                   {isRegisterMode ? 'Зареєструватися' : 'Увійти'}
@@ -251,7 +345,7 @@ function App() {
         </div>
       )}
 
-      {/* Модалки додавання категорій та регіонів */}
+      {/* Модалки Категорій та Регіонів */}
       {showCategoryModal && (
         <div className="modal-overlay">
           <div className="modal">
