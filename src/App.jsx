@@ -5,9 +5,6 @@ import './index.css';
 
 const API_URL = 'http://localhost:5000/api';
 
-// ==========================================
-// 1. ШАПКА САЙТУ (HEADER)
-// ==========================================
 function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onOpenRegionModal }) {
   const navigate = useNavigate();
 
@@ -38,6 +35,14 @@ function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onO
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {user ? (
           <>
+            {/* 🔴 КНОПКА «ОБРАНЕ» ДЛЯ АВТОРИЗОВАНИХ КОРИСТУВАЧІВ */}
+            <button
+              onClick={() => navigate('/favorites')}
+              style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              ❤️ Обране
+            </button>
+
             {user.role === 'admin' && (
               <button onClick={() => navigate('/admin')} style={{ background: '#0f172a', color: '#f8fafc', border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
                 🛡️ Admin Panel
@@ -58,13 +63,13 @@ function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onO
           </>
         )}
       </div>
+
     </header>
+
   );
 }
 
-// ==========================================
 // 2. ГОЛОВНА СТОРІНКА (MAIN CATALOG)
-// ==========================================
 function MainPage({ user, token, activeRegion, searchQuery }) {
   const [promotions, setPromotions] = useState([]);
   const [popularPlaces, setPopularPlaces] = useState([]);
@@ -72,6 +77,7 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
   const [favorites, setFavorites] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const navigate = useNavigate();
+
 
   useEffect(() => {
     axios.get(`${API_URL}/categories`).then(res => setCategories(res.data)).catch(() => { });
@@ -95,15 +101,30 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
     }
   }, [user, token]);
 
-  const toggleFavorite = (id) => {
+  const toggleFavorite = (promoId) => {
     if (!user) return navigate('/login');
-    const isFav = favorites.includes(id);
+
+    const isFav = favorites.includes(promoId);
+
     if (isFav) {
-      axios.delete(`${API_URL}/favorites/${id}`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(() => setFavorites(favorites.filter(favId => favId !== id)));
+      // Видаляємо з обраного
+      axios.delete(`${API_URL}/favorites/${promoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(() => {
+          setFavorites(favorites.filter(id => id !== promoId));
+        })
+        .catch(() => alert('Помилка видалення з обраного'));
     } else {
-      axios.post(`${API_URL}/favorites`, { promotion_id: id }, { headers: { Authorization: `Bearer ${token}` } })
-        .then(() => setFavorites([...favorites, id]));
+      // Додаємо в обране
+      axios.post(`${API_URL}/favorites`,
+        { promotion_id: promoId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+        .then(() => {
+          setFavorites([...favorites, promoId]);
+        })
+        .catch(() => alert('Помилка додавання в обране'));
     }
   };
 
@@ -139,6 +160,7 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
         ))}
       </div>
 
+
       {/* Популярні заклади */}
       <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>Популярні заклади</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px', marginBottom: '40px' }}>
@@ -170,15 +192,38 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
         <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
           {promotions.map(promo => {
             const isFav = favorites.includes(promo.id);
+
             return (
               <div key={promo.id} className="card" style={{ background: '#fff', borderRadius: '20px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', position: 'relative' }}>
+
+                {/* 🔴 КНОПКА «ОБРАНЕ» (СЕРДЕЧКО) */}
                 <button
-                  onClick={() => toggleFavorite(promo.id)}
-                  style={{ position: 'absolute', top: '16px', right: '16px', background: '#f8fafc', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '18px' }}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Щоб не спрацьовували інші кліки по картці
+                    toggleFavorite(promo.id);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '16px',
+                    right: '16px',
+                    background: isFav ? '#fef2f2' : '#f8fafc',
+                    border: isFav ? '1px solid #fca5a5' : '1px solid #e2e8f0',
+                    borderRadius: '50%',
+                    width: '38px',
+                    height: '38px',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2
+                  }}
+                  title={isFav ? "Видалити з обраного" : "Зберегти в обране"}
                 >
                   {isFav ? '❤️' : '🤍'}
                 </button>
 
+                {/* Зображення та контент акції */}
                 <div style={{ height: '120px', background: '#f8fafc', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', marginBottom: '16px', position: 'relative' }}>
                   {promo.image_url || '☕🥐'}
                   <span style={{ position: 'absolute', bottom: '8px', right: '8px', background: '#ef4444', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
@@ -188,7 +233,7 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
 
                 <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '6px' }}>{promo.title}</h4>
                 <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>🏬 {promo.place_name}</p>
-                <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>📍 {promo.address} ({promo.region_name})</p>
+                <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>📍 {promo.address}</p>
 
                 <button onClick={() => navigate(`/place/${promo.place_id}`)} style={{ width: '100%', background: '#6366f1', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
                   Детальніше
@@ -198,6 +243,17 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
           })}
         </div>
       )}
+      <footer style={{ marginTop: '60px', background: '#fff', borderTop: '1px solid #e2e8f0', padding: '32px 16px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ fontWeight: '800', color: '#6366f1', fontSize: '20px' }}>Promo</div>
+          <div>© 2026 Promo. Усі права захищено. Платформа локальних знижок та акцій.</div>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Про нас</a>
+            <a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Для бізнесу</a>
+            <a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Підтримка</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -590,7 +646,88 @@ function MerchantCabinet({ user, token }) {
 }
 
 // ==========================================
-// 6. ТЕМНА АДМІН-ПАНЕЛЬ (/admin)
+// СТОРІНКА ОБРАНОГО (/favorites)
+// ==========================================
+function FavoritesPage({ token, user }) {
+  const [favoritePromos, setFavoritePromos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (token) {
+      axios.get(`${API_URL}/favorites`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => {
+          // Отримуємо масив акцій
+          setFavoritePromos(res.data);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }, [token]);
+
+  const removeFavorite = (promoId) => {
+    axios.delete(`${API_URL}/favorites/${promoId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(() => {
+        setFavoritePromos(favoritePromos.filter(p => p.id !== promoId && p.promotion_id !== promoId));
+      });
+  };
+
+  if (!user) return <Navigate to="/login" />;
+
+  return (
+    <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
+      <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#6366f1', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px' }}>
+        ← На головну
+      </button>
+
+      <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
+        ❤️ Ваші збережені акції ({favoritePromos.length})
+      </h2>
+
+      {loading ? (
+        <p>Завантаження...</p>
+      ) : favoritePromos.length === 0 ? (
+        <div style={{ background: '#fff', padding: '40px', borderRadius: '20px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <p style={{ fontSize: '18px', color: '#64748b', marginBottom: '16px' }}>Ви ще не додали жодної акції в обране 💔</p>
+          <button onClick={() => navigate('/')} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+            Перейти до каталогу
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          {favoritePromos.map(promo => (
+            <div key={promo.id || promo.promotion_id} style={{ background: '#fff', borderRadius: '20px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', position: 'relative' }}>
+              <button
+                onClick={() => removeFavorite(promo.id || promo.promotion_id)}
+                style={{ position: 'absolute', top: '16px', right: '16px', background: '#fef2f2', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px' }}
+                title="Видалити з обраного"
+              >
+                🗑️
+              </button>
+
+              <div style={{ height: '120px', background: '#f8fafc', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', marginBottom: '16px', position: 'relative' }}>
+                {promo.image_url || '☕🥐'}
+                <span style={{ position: 'absolute', bottom: '8px', right: '8px', background: '#ef4444', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
+                  {promo.discount_value}
+                </span>
+              </div>
+
+              <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '6px' }}>{promo.title}</h4>
+              <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>🏬 {promo.place_name || 'Заклад'}</p>
+
+              <button onClick={() => navigate(`/place/${promo.place_id}`)} style={{ width: '100%', background: '#6366f1', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+                Детальніше
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// 6. АДМІН-ПАНЕЛЬ (/admin)
 // ==========================================
 function AdminPanel({ token }) {
   const [activeTab, setActiveTab] = useState('places');
@@ -859,6 +996,7 @@ export default function App() {
           path="/admin"
           element={currentUser?.role === 'admin' ? <AdminPanel token={token} /> : <Navigate to="/" />}
         />
+        <Route path="/favorites" element={<FavoritesPage token={token} user={currentUser} />} />
       </Routes>
 
       {/* 📍 МОДАЛЬНЕ ВІКНО ВИБОРУ ТА АВТОДОДАВАННЯ МІСТА */}
