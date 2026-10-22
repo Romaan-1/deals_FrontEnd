@@ -10,6 +10,7 @@ const API_URL = 'http://localhost:5000/api';
 // ==========================================
 function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onOpenRegionModal }) {
   const navigate = useNavigate();
+
   return (
     <header className="header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -17,7 +18,7 @@ function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onO
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#6366f1', margin: 0 }}>Promo</h1>
         </Link>
 
-        {/* Пошуковий рядок */}
+        {/* Рядок глобального пошуку */}
         <div style={{ position: 'relative' }}>
           <input
             type="text"
@@ -28,7 +29,7 @@ function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onO
           />
         </div>
 
-        {/* Вибір міста */}
+        {/* Кнопка вибору міста */}
         <button onClick={onOpenRegionModal} style={{ background: '#f1f5f9', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#334155' }}>
           📍 {activeRegion ? activeRegion.name : 'Усі міста'} ▾
         </button>
@@ -158,7 +159,7 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
         ))}
       </div>
 
-      {/* Акції */}
+      {/* Список акцій */}
       <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
         {searchQuery ? `Результати пошуку для "${searchQuery}"` : 'Гарячі пропозиції 🔥'}
       </h3>
@@ -637,23 +638,12 @@ function AdminPanel({ token }) {
       });
   };
 
-  const handleSyncCities = () => {
-    axios.post(`${API_URL}/regions/sync`)
-      .then(res => alert(res.data.message || 'Синхронізацію міст завершено!'))
-      .catch(() => alert('Помилка синхронізації міст'));
-  };
-
   return (
     <div style={{ minHeight: '100vh', background: '#0f172a', color: '#f8fafc', padding: '24px' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}><span style={{ color: '#818cf8' }}>Promo</span> | Admin Panel</h2>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <button onClick={handleSyncCities} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-              🔄 Завантажити міста з API
-            </button>
-            <span style={{ fontWeight: 'bold', color: '#94a3b8' }}>SuperAdmin 🛡️</span>
-          </div>
+          <span style={{ fontWeight: 'bold', color: '#94a3b8' }}>SuperAdmin 🛡️</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '24px' }}>
@@ -781,7 +771,7 @@ function AdminPanel({ token }) {
 }
 
 // ==========================================
-// 7. ГОЛОВНИЙ КОМПОНЕНТ APP ВЗ В МАРШРУТИЗАЦІЄЮ
+// 7. ГОЛОВНИЙ КОМПОНЕНТ APP ВЗ МАРШРУТИЗАЦІЄЮ
 // ==========================================
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -795,29 +785,10 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showRegionModal, setShowRegionModal] = useState(false);
 
-  // Стан для пошуку та додавання міста всередині модалки
+  // Стан пошуку та додавання міста у модальному вікні
   const [citySearchFilter, setCitySearchFilter] = useState('');
   const [customCityName, setCustomCityName] = useState('');
 
-  // Універсальне додавання міста (з пошукового поля або з нижньої форми)
-  const handleAddCity = (nameToAdd) => {
-    const finalName = nameToAdd || customCityName || citySearchFilter;
-
-    if (!finalName || !finalName.trim()) return;
-
-    axios.post(`${API_URL}/regions`, { name: finalName.trim() })
-      .then(res => {
-        alert(`Місто "${res.data.name}" успішно додано та обрано!`);
-        setActiveRegion(res.data); // Одразу обираємо новостворене місто
-        setCustomCityName('');
-        setCitySearchFilter('');
-        setShowRegionModal(false);
-
-        // Оновлюємо список міст
-        axios.get(`${API_URL}/regions`).then(r => setRegions(r.data)).catch(() => { });
-      })
-      .catch(err => alert(err.response?.data?.error || 'Помилка додавання міста'));
-  };
   const fetchRegions = () => {
     axios.get(`${API_URL}/regions`)
       .then(res => setRegions(res.data))
@@ -842,21 +813,25 @@ export default function App() {
     localStorage.removeItem('token');
   };
 
-  // Ручне додавання будь-якого міста
-  const handleAddCustomCity = (e) => {
-    e.preventDefault();
-    if (!customCityName.trim()) return;
+  // Універсальна функція додавання міста
+  const handleAddCity = (nameToAdd) => {
+    const finalName = nameToAdd || customCityName || citySearchFilter;
 
-    axios.post(`${API_URL}/regions`, { name: customCityName.trim() })
+    if (!finalName || !finalName.trim()) return;
+
+    axios.post(`${API_URL}/regions`, { name: finalName.trim() })
       .then(res => {
-        alert(`Місто "${customCityName}" додано!`);
+        alert(`Місто "${res.data.name}" успішно додано та обрано!`);
+        setActiveRegion(res.data);
         setCustomCityName('');
+        setCitySearchFilter('');
+        setShowRegionModal(false);
         fetchRegions();
       })
-      .catch(() => alert('Помилка додавання міста'));
+      .catch(err => alert(err.response?.data?.error || 'Помилка додавання міста'));
   };
 
-  // Фільтрація списку міст за заповненим пошуком
+  // Фільтрація міст для підказок на льоту
   const filteredRegions = regions.filter(r =>
     r.name.toLowerCase().includes(citySearchFilter.toLowerCase())
   );
@@ -886,13 +861,13 @@ export default function App() {
         />
       </Routes>
 
-      {/* 📍 МОДАЛЬНЕ ВІКНО З АВТОДОДАВАННЯМ ПО ENTER */}
+      {/* 📍 МОДАЛЬНЕ ВІКНО ВИБОРУ ТА АВТОДОДАВАННЯ МІСТА */}
       {showRegionModal && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: '420px', borderRadius: '20px', padding: '24px' }}>
             <h3 style={{ marginBottom: '16px', fontSize: '20px', fontWeight: 'bold' }}>Оберіть місто</h3>
 
-            {/* Рядок пошуку + додавання по Enter */}
+            {/* Пошук + додавання по Enter */}
             <input
               type="text"
               placeholder="🔍 Введіть назву міста..."
@@ -901,7 +876,6 @@ export default function App() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  // Якщо таких міст немає у списку — додаємо нове по Enter
                   if (filteredRegions.length === 0 && citySearchFilter.trim()) {
                     handleAddCity(citySearchFilter);
                   }
@@ -929,7 +903,7 @@ export default function App() {
                 </button>
               ))}
 
-              {/* Підказка-кнопка, якщо місто не знайдено */}
+              {/* Зелена кнопка-підказка якщо місто не знайдено в списку */}
               {filteredRegions.length === 0 && citySearchFilter.trim() !== '' && (
                 <button
                   onClick={() => handleAddCity(citySearchFilter)}
@@ -940,7 +914,7 @@ export default function App() {
               )}
             </div>
 
-            {/* Нижня форма створення */}
+            { }
             <form onSubmit={(e) => { e.preventDefault(); handleAddCity(customCityName); }} style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginBottom: '12px' }}>
               <input
                 type="text"
