@@ -5,17 +5,21 @@ import './index.css';
 
 const API_URL = 'http://localhost:5000/api';
 
-function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onOpenRegionModal }) {
+// ==========================================
+// 1. ШАПКА САЙТУ (ОНОВЛЕНИЙ HEADER)
+// ==========================================
+function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onOpenRegionModal, theme, toggleTheme }) {
   const navigate = useNavigate();
 
   return (
     <header className="header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+
+      {/* 👈 Ліва частина: Логотип, Пошук та Місто */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#6366f1', margin: 0 }}>Promo</h1>
         </Link>
 
-        {/* Рядок глобального пошуку */}
         <div style={{ position: 'relative' }}>
           <input
             type="text"
@@ -26,46 +30,65 @@ function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onO
           />
         </div>
 
-        {/* Кнопка вибору міста */}
         <button onClick={onOpenRegionModal} style={{ background: '#f1f5f9', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#334155' }}>
           📍 {activeRegion ? activeRegion.name : 'Усі міста'} ▾
         </button>
       </div>
 
+      {/* 👉 Права частина: Перемикач теми + Дії користувача */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+        {/* 🔴 ТУТ ВСТАВЛЯЄМО КНОПКУ ТЕМИ (Доступна всім) */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            background: theme === 'dark' ? '#334155' : '#f1f5f9',
+            color: theme === 'dark' ? '#f8fafc' : '#334155',
+            border: 'none',
+            padding: '8px 14px',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+          title="Змінити тему сайту"
+        >
+          {theme === 'dark' ? '☀️ Світла' : '🌙 Темна'}
+        </button>
+
         {user ? (
           <>
-            {/* 🔴 КНОПКА «ОБРАНЕ» ДЛЯ АВТОРИЗОВАНИХ КОРИСТУВАЧІВ */}
             <button
               onClick={() => navigate('/favorites')}
-              style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}
             >
               ❤️ Обране
             </button>
 
             {user.role === 'admin' && (
-              <button onClick={() => navigate('/admin')} style={{ background: '#0f172a', color: '#f8fafc', border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
-                🛡️ Admin Panel
+              <button onClick={() => navigate('/admin')} style={{ background: '#0f172a', color: '#f8fafc', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
+                🛡️ Admin
               </button>
             )}
             {(user.role === 'merchant' || user.role === 'admin') && (
-              <button onClick={() => navigate('/merchant')} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
-                🏬 Кабінет закладу
+              <button onClick={() => navigate('/merchant')} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
+                🏬 Кабінет
               </button>
             )}
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>👤 {user.full_name}</span>
-            <button onClick={onLogout} className="btn-secondary" style={{ padding: '8px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: '600' }}>Вийти</button>
+            <span style={{ fontSize: '14px', fontWeight: '600' }}>👤 {user.full_name}</span>
+            <button onClick={onLogout} style={{ padding: '8px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'transparent', cursor: 'pointer', fontWeight: '600' }}>Вийти</button>
           </>
         ) : (
           <>
-            <button onClick={() => navigate('/login')} style={{ background: 'transparent', border: 'none', fontWeight: '600', cursor: 'pointer', marginRight: '8px' }}>Увійти</button>
-            <button onClick={() => navigate('/login')} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>Реєстрація</button>
+            <button onClick={() => navigate('/login')} style={{ background: 'transparent', border: 'none', fontWeight: '600', cursor: 'pointer', marginRight: '4px' }}>Увійти</button>
+            <button onClick={() => navigate('/login')} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>Реєстрація</button>
           </>
         )}
       </div>
-
     </header>
-
   );
 }
 
@@ -199,7 +222,7 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
                 {/* 🔴 КНОПКА «ОБРАНЕ» (СЕРДЕЧКО) */}
                 <button
                   onClick={(e) => {
-                    e.stopPropagation(); // Щоб не спрацьовували інші кліки по картці
+                    e.stopPropagation();
                     toggleFavorite(promo.id);
                   }}
                   style={{
@@ -312,7 +335,7 @@ function PlacePage() {
 }
 
 // ==========================================
-// 4. СТОРІНКА АВТОРИЗАЦІЇ (/login)
+// 4. СТОРІНКА АВТОРИЗАЦІЇ З ВАЛІДАЦІЄЮ (Таска №18)
 // ==========================================
 function AuthPage({ onAuthSuccess }) {
   const [isRegister, setIsRegister] = useState(true);
@@ -320,12 +343,46 @@ function AuthPage({ onAuthSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [error, setError] = useState('');
+
+  // Помилки валідації
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [generalError, setGeneralError] = useState('');
   const navigate = useNavigate();
+
+  // Перевірка email на правильність формату
+  const validateEmail = (val) => {
+    setEmail(val);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!val) {
+      setEmailError('Email є обов\'язковим');
+    } else if (!emailRegex.test(val)) {
+      setEmailError('Введіть коректну e-mail адресу (напр. user@gmail.com)');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  // Перевірка довжини пароля
+  const validatePassword = (val) => {
+    setPassword(val);
+    if (!val) {
+      setPasswordError('Пароль є обов\'язковим');
+    } else if (val.length < 6) {
+      setPasswordError('Пароль повинен містити щонайменше 6 символів');
+    } else {
+      setPasswordError('');
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setError('');
+    setGeneralError('');
+
+    if (emailError || passwordError || !email || !password) {
+      setGeneralError('Будь ласка, виправте помилки у формі перед відправкою');
+      return;
+    }
 
     const endpoint = isRegister ? '/auth/register' : '/auth/login';
     const payload = isRegister
@@ -337,16 +394,18 @@ function AuthPage({ onAuthSuccess }) {
         onAuthSuccess(res.data.user, res.data.token);
         navigate('/');
       })
-      .catch(err => setError(err.response?.data?.error || 'Помилка авторизації'));
+      .catch(err => setGeneralError(err.response?.data?.error || 'Помилка авторизації'));
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div style={{ background: '#fff', padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>
           {isRegister ? 'Створити акаунт' : 'Вхід у систему'}
         </h2>
-        <p style={{ color: '#64748b', fontSize: '14px', textAlign: 'center', marginBottom: '24px' }}>Приєднуйтесь до платформи знижок вашого міста</p>
+        <p style={{ color: '#64748b', fontSize: '14px', textAlign: 'center', marginBottom: '24px' }}>
+          Платформа локальних знижок та акцій
+        </p>
 
         {isRegister && (
           <div style={{ display: 'flex', background: '#f8fafc', padding: '4px', borderRadius: '12px', marginBottom: '20px' }}>
@@ -367,23 +426,68 @@ function AuthPage({ onAuthSuccess }) {
           </div>
         )}
 
-        {error && <p style={{ color: '#ef4444', fontSize: '14px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
+        {generalError && <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px', textAlign: 'center', fontWeight: 'bold' }}>{generalError}</p>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {isRegister && (
-            <input className="input-field" placeholder={accountType === 'merchant' ? "Назва компанії / закладу" : "ПІБ"} value={fullName} onChange={e => setFullName(e.target.value)} required />
+            <div>
+              <input
+                className="input-field"
+                placeholder={accountType === 'merchant' ? "Назва компанії / закладу" : "ПІБ"}
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                required
+              />
+            </div>
           )}
-          <input className="input-field" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className="input-field" type="password" placeholder="Пароль" value={password} onChange={e => setPassword(e.target.value)} required />
 
-          <button type="submit" style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
+          <div>
+            <input
+              className="input-field"
+              type="email"
+              placeholder="Email (напр. name@domain.com)"
+              value={email}
+              onChange={e => validateEmail(e.target.value)}
+              style={{ borderColor: emailError ? '#ef4444' : '#cbd5e1' }}
+              required
+            />
+            {emailError && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{emailError}</span>}
+          </div>
+
+          <div>
+            <input
+              className="input-field"
+              type="password"
+              placeholder="Пароль (мін. 6 символів)"
+              value={password}
+              onChange={e => validatePassword(e.target.value)}
+              style={{ borderColor: passwordError ? '#ef4444' : '#cbd5e1' }}
+              required
+            />
+            {passwordError && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{passwordError}</span>}
+          </div>
+
+          <button
+            type="submit"
+            disabled={!!emailError || !!passwordError}
+            style={{
+              background: (emailError || passwordError) ? '#94a3b8' : '#6366f1',
+              color: '#fff',
+              border: 'none',
+              padding: '12px',
+              borderRadius: '12px',
+              fontWeight: 'bold',
+              cursor: (emailError || passwordError) ? 'not-allowed' : 'pointer',
+              marginTop: '8px'
+            }}
+          >
             {isRegister ? 'Зареєструватися' : 'Увійти'}
           </button>
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: '#64748b' }}>
           {isRegister ? 'Вже є акаунт? ' : 'Немає акаунту? '}
-          <span style={{ color: '#6366f1', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setIsRegister(!isRegister)}>
+          <span style={{ color: '#6366f1', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => { setIsRegister(!isRegister); setGeneralError(''); }}>
             {isRegister ? 'Увійти' : 'Зареєструватися'}
           </span>
         </p>
@@ -925,6 +1029,22 @@ export default function App() {
   // Стан пошуку та додавання міста у модальному вікні
   const [citySearchFilter, setCitySearchFilter] = useState('');
   const [customCityName, setCustomCityName] = useState('');
+  // 1. Стан теми (зчитуємо збережену або за замовчуванням 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  // 2. Перемикання класу у body
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   const fetchRegions = () => {
     axios.get(`${API_URL}/regions`)
@@ -982,6 +1102,8 @@ export default function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onOpenRegionModal={() => setShowRegionModal(true)}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
 
       <Routes>

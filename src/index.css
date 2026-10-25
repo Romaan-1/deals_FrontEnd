@@ -220,3 +220,40 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* 🌙 ТЕМНА ТЕМА (DARK MODE) */
+body.dark-mode {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+body.dark-mode .header {
+  background-color: #1e293b !important;
+  border-bottom-color: #334155 !important;
+}
+
+body.dark-mode .card,
+body.dark-mode .modal {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode input,
+body.dark-mode select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode p,
+body.dark-mode span {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4 {
+  color: #ffffff !important;
+}
