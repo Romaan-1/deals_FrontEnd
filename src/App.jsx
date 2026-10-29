@@ -137,7 +137,7 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
         .then(() => {
           setFavorites(favorites.filter(id => id !== promoId));
         })
-        .catch(() => alert('Помилка видалення з обраного'));
+        .catch(() => showToast('Помилка видалення з обраного', 'error'));
     } else {
       // Додаємо в обране
       axios.post(`${API_URL}/favorites`,
@@ -147,7 +147,7 @@ function MainPage({ user, token, activeRegion, searchQuery }) {
         .then(() => {
           setFavorites([...favorites, promoId]);
         })
-        .catch(() => alert('Помилка додавання в обране'));
+        .catch(() => showToast('Помилка додавання в обране', 'error'));
     }
   };
 
@@ -541,7 +541,7 @@ function MerchantCabinet({ user, token }) {
   const handleCreatePlace = (e) => {
     e.preventDefault();
     if (!newPlaceCatId || !newPlaceRegionId) {
-      alert('Будь ласка, оберіть категорію та місто!');
+      showToast('Будь ласка, оберіть категорію та місто!', 'error');
       return;
     }
 
@@ -552,13 +552,13 @@ function MerchantCabinet({ user, token }) {
       region_id: parseInt(newPlaceRegionId, 10)
     }, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        alert('Заклад створено успішно!');
+        showToast('Заклад створено успішно!', 'success');
         setNewPlaceName('');
         setNewPlaceAddress('');
         setActiveTab('my_promos');
         fetchMyData();
       })
-      .catch(err => alert(err.response?.data?.error || 'Помилка створення закладу'));
+      .catch(err => showToast(err.response?.data?.error || 'Помилка створення закладу', 'error'));
   };
 
   const handleCreatePromo = (e) => {
@@ -571,19 +571,19 @@ function MerchantCabinet({ user, token }) {
       end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     }, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        alert('Акцію створено!');
+        showToast('Акцію створено!', 'success');
         setShowAddPromoModal(false);
         setPromoTitle('');
         fetchMyData();
       })
-      .catch(err => alert(err.response?.data?.error || 'Помилка розміщення акції'));
+      .catch(err => showToast(err.response?.data?.error || 'Помилка розміщення акції', 'error'));
   };
 
   const handleDeletePromo = (id) => {
     if (!window.confirm('Видалити цю акцію?')) return;
     axios.delete(`${API_URL}/promotions/${id}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        alert('Акцію видалено');
+        showToast('Акцію видалено', 'success');
         fetchMyData();
       });
   };
@@ -857,7 +857,7 @@ function AdminPanel({ token }) {
   const handleApprovePlace = (id, isApproved) => {
     axios.put(`${API_URL}/admin/places/${id}/approve`, { is_verified: isApproved }, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        alert(isApproved ? 'Заклад успішно підтверджено!' : 'Запит відхилено');
+        showToast(isApproved ? 'Заклад успішно підтверджено!' : 'Запит відхилено', 'success');
         loadData();
       });
   };
@@ -865,7 +865,7 @@ function AdminPanel({ token }) {
   const handleChangeRole = (userId, newRole) => {
     axios.put(`${API_URL}/admin/users/${userId}/role`, { role: newRole }, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        alert('Роль успішно змінено!');
+        showToast('Роль успішно змінено!', 'success');
         loadData();
       });
   };
@@ -874,7 +874,7 @@ function AdminPanel({ token }) {
     if (!window.confirm('Видалити цю акцію як адміністратор?')) return;
     axios.delete(`${API_URL}/promotions/${promoId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        alert('Акцію видалено');
+        showToast('Акцію видалено', 'success');
         loadData();
       });
   };
@@ -1070,6 +1070,13 @@ export default function App() {
     localStorage.removeItem('token');
   };
 
+  const [toast, setToast] = useState(null); // { message: '', type: 'success' | 'error' }
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000); // Ховаємо через 3 секунди
+  };
+
   // Універсальна функція додавання міста
   const handleAddCity = (nameToAdd) => {
     const finalName = nameToAdd || customCityName || citySearchFilter;
@@ -1078,14 +1085,14 @@ export default function App() {
 
     axios.post(`${API_URL}/regions`, { name: finalName.trim() })
       .then(res => {
-        alert(`Місто "${res.data.name}" успішно додано та обрано!`);
+        showToast(`Місто "${res.data.name}" успішно додано!`, 'success');
         setActiveRegion(res.data);
         setCustomCityName('');
         setCitySearchFilter('');
         setShowRegionModal(false);
         fetchRegions();
       })
-      .catch(err => alert(err.response?.data?.error || 'Помилка додавання міста'));
+      .catch(err => showToast(err.response?.data?.error || 'Помилка додавання міста', 'error'));
   };
 
   // Фільтрація міст для підказок на льоту
@@ -1174,7 +1181,11 @@ export default function App() {
               )}
             </div>
 
-            { }
+            {showToast && (
+              <div style={{ position: 'fixed', top: '20px', right: '20px', padding: '12px', borderRadius: '8px', background: '#10b981', color: '#fff', fontWeight: 'bold', zIndex: 1000 }}>
+                {showToast}
+              </div>
+            )}
             <form onSubmit={(e) => { e.preventDefault(); handleAddCity(customCityName); }} style={{ display: 'flex', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginBottom: '12px' }}>
               <input
                 type="text"
@@ -1192,6 +1203,28 @@ export default function App() {
               Закрити
             </button>
           </div>
+        </div>
+      )}
+      {/* 🔔 FLOATING TOAST NOTIFICATION */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: toast.type === 'error' ? '#ef4444' : '#10b981',
+          color: '#fff',
+          padding: '14px 20px',
+          borderRadius: '14px',
+          fontWeight: 'bold',
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          animation: 'slideIn 0.3s ease'
+        }}>
+          <span>{toast.type === 'error' ? '❌' : '✅'}</span>
+          {toast.message}
         </div>
       )}
     </BrowserRouter>
