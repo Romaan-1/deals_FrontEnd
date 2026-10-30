@@ -43,15 +43,23 @@ body {
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 280px !important;
+  height: auto !important;
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 20px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  position: relative !important;
+  border: 1px solid #f1f5f9 !important;
+}
+
+body.dark-mode .card {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 .card:hover {
@@ -221,39 +229,80 @@ body {
   cursor: pointer;
 }
 
-/* 🌙 ТЕМНА ТЕМА (DARK MODE) */
+/* ==========================================
+   🌙 ТЕМНА ТЕМА (DARK MODE GLOBAL FIX)
+   ========================================== */
+
+/* 1. Загальний фон та колір тексту */
 body.dark-mode {
   background-color: #0f172a !important;
   color: #f8fafc !important;
 }
 
-body.dark-mode .header {
+/* 2. Шапка, картки, модальні вікна та блоки */
+body.dark-mode header,
+body.dark-mode .header,
+body.dark-mode .modal,
+body.dark-mode div[style*="background: #fff"],
+body.dark-mode div[style*="background: rgb(255, 255, 255)"],
+body.dark-mode div[style*="background-color: #fff"] {
   background-color: #1e293b !important;
-  border-bottom-color: #334155 !important;
-}
-
-body.dark-mode .card,
-body.dark-mode .modal {
-  background-color: #1e293b !important;
-  color: #f8fafc !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
-}
-
-body.dark-mode input,
-body.dark-mode select {
-  background-color: #0f172a !important;
   color: #f8fafc !important;
   border-color: #334155 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4) !important;
 }
 
-body.dark-mode p,
-body.dark-mode span {
-  color: #cbd5e1 !important;
-}
-
+/* 3. Всі заголовки та параграфи */
 body.dark-mode h1,
 body.dark-mode h2,
 body.dark-mode h3,
-body.dark-mode h4 {
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6,
+body.dark-mode strong,
+body.dark-mode b {
+  color: #ffffff !important;
+}
+
+body.dark-mode p,
+body.dark-mode span,
+body.dark-mode label,
+body.dark-mode div {
+  color: #cbd5e1;
+}
+
+/* 4. Поля вводу (Input, Select) */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 5. Кнопки зі світлим фоном */
+body.dark-mode button[style*="background: #f1f5f9"],
+body.dark-mode button[style*="background: #f8fafc"] {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+/* 6. Таблиці (Кабінет закладу / Адмін-панель) */
+body.dark-mode table,
+body.dark-mode tr,
+body.dark-mode td,
+body.dark-mode th {
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+/* 7. Захист кольорових плашок (акценти не псуються) */
+body.dark-mode span[style*="background: #ef4444"],
+body.dark-mode button[style*="background: #6366f1"],
+body.dark-mode button[style*="background: #10b981"] {
   color: #ffffff !important;
 }
