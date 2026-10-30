@@ -596,6 +596,7 @@ function MerchantCabinet({ user, token, showToast }) {
 
   const [logoUrl, setLogoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [imageInputType, setImageInputType] = useState('url'); // 'url' або 'file'
 
   const fetchMyData = () => {
     axios.get(`${API_URL}/places/my`, { headers: { Authorization: `Bearer ${token}` } })
@@ -806,20 +807,96 @@ function MerchantCabinet({ user, token, showToast }) {
             {activeTab === 'add_place' && (
               <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Реєстрація нового закладу</h3>
+
                 <form onSubmit={handleCreatePlace} style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '450px' }}>
-                  <input className="input-field" placeholder="Назва закладу..." value={newPlaceName} onChange={e => setNewPlaceName(e.target.value)} required />
-                  <input className="input-field" placeholder="Адреса..." value={newPlaceAddress} onChange={e => setNewPlaceAddress(e.target.value)} required />
+                  <input
+                    className="input-field"
+                    placeholder="Назва закладу..."
+                    value={newPlaceName}
+                    onChange={e => setNewPlaceName(e.target.value)}
+                    required
+                  />
+                  <input
+                    className="input-field"
+                    placeholder="Адреса..."
+                    value={newPlaceAddress}
+                    onChange={e => setNewPlaceAddress(e.target.value)}
+                    required
+                  />
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Завантажити логотип / фото закладу:</label>
-                    <input type="file" accept="image/*" onChange={handleFileUpload} style={{ fontSize: '13px' }} />
+                  {/* 🖼️ БЛОК ВИБОРУ ФОТО: URL АБО ЗАВАНТАЖЕННЯ ФАЙЛУ */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#f8fafc', padding: '14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Логотип / Фото закладу:</label>
 
-                    {uploading && <span style={{ fontSize: '12px', color: '#6366f1', fontWeight: 'bold' }}>⏳ Завантаження фото на сервер...</span>}
+                    {/* Перемикач режимів */}
+                    <div style={{ display: 'flex', gap: '6px', background: '#e2e8f0', padding: '3px', borderRadius: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setImageInputType('url')}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          border: 'none',
+                          borderRadius: '8px',
+                          background: imageInputType === 'url' ? '#fff' : 'transparent',
+                          fontWeight: 'bold',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔗 Посилання з інтернету
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageInputType('file')}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          border: 'none',
+                          borderRadius: '8px',
+                          background: imageInputType === 'file' ? '#fff' : 'transparent',
+                          fontWeight: 'bold',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📁 Завантажити файл
+                      </button>
+                    </div>
 
+                    {/* Режим 1: Вставка URL з інтернету */}
+                    {imageInputType === 'url' ? (
+                      <input
+                        type="url"
+                        className="input-field"
+                        placeholder="https://example.com/photo.jpg"
+                        value={logoUrl}
+                        onChange={e => setLogoUrl(e.target.value)}
+                        style={{ marginBottom: 0 }}
+                      />
+                    ) : (
+                      /* Режим 2: Завантаження файлу з ПК */
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          style={{ fontSize: '13px' }}
+                        />
+                        {uploading && <span style={{ fontSize: '12px', color: '#6366f1', display: 'block', marginTop: '4px', fontWeight: 'bold' }}>⏳ Завантаження фото...</span>}
+                      </div>
+                    )}
+
+                    {/* Live Preview для обох варіантів */}
                     {logoUrl && (
-                      <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img src={logoUrl} alt="Preview" style={{ width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover', border: '2px solid #10b981' }} />
-                        <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 'bold' }}>✅ Фото готовe!</span>
+                      <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
+                        <img
+                          src={logoUrl}
+                          alt="Preview"
+                          style={{ width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover' }}
+                          onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/50?text=Error'; }}
+                        />
+                        <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 'bold' }}>✅ Зображення підтягнуто!</span>
                       </div>
                     )}
                   </div>
