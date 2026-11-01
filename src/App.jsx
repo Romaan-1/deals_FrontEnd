@@ -598,6 +598,17 @@ function MerchantCabinet({ user, token, showToast }) {
   const [uploading, setUploading] = useState(false);
   const [imageInputType, setImageInputType] = useState('url'); // 'url' або 'file'
 
+  const defaultCategories = [
+    { id: 1, name: "Кав'ярні та кафе", icon: '☕', slug: 'kavyarni-ta-kafe' },
+    { id: 2, name: "Ресторани та піца", icon: '🍕', slug: 'restorany-ta-pitza' },
+    { id: 3, name: "Шопінг та одяг", icon: '🛍️', slug: 'shopinh-ta-odyah' },
+    { id: 4, name: "Краса та догляд", icon: '💇', slug: 'krasa-ta-dohlyad' },
+    { id: 5, name: "Розваги", icon: '🍿', slug: 'rozvahy' },
+    { id: 6, name: "Авто та сервіс", icon: '🚗', slug: 'avto-ta-servis' }
+  ];
+
+  const availableCategories = categories.length > 0 ? categories : defaultCategories;
+
   const fetchMyData = () => {
     axios.get(`${API_URL}/places/my`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => {
@@ -901,9 +912,18 @@ function MerchantCabinet({ user, token, showToast }) {
                     )}
                   </div>
 
-                  <select className="input-field" value={newPlaceCatId} onChange={e => setNewPlaceCatId(e.target.value)} required>
+                  <select
+                    className="input-field"
+                    value={newPlaceCatId}
+                    onChange={e => setNewPlaceCatId(e.target.value)}
+                    required
+                  >
                     <option value="">Оберіть категорію...</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                    {availableCategories.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.icon || '🏷️'} {c.name}
+                      </option>
+                    ))}
                   </select>
 
                   <select className="input-field" value={newPlaceRegionId} onChange={e => setNewPlaceRegionId(e.target.value)} required>
