@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './index.css';
 
@@ -78,8 +78,18 @@ function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onO
           </>
         ) : (
           <>
-            <button onClick={() => navigate('/login')} style={{ background: 'transparent', border: 'none', fontWeight: '600', cursor: 'pointer', marginRight: '4px' }}>Увійти</button>
-            <button onClick={() => navigate('/login')} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>Реєстрація</button>
+            <button
+              onClick={() => navigate('/login', { state: { isRegister: false } })}
+              style={{ background: 'transparent', border: 'none', fontWeight: '600', cursor: 'pointer', marginRight: '4px' }}
+            >
+              Увійти
+            </button>
+            <button
+              onClick={() => navigate('/login', { state: { isRegister: true } })}
+              style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Реєстрація
+            </button>
           </>
         )}
       </div>
@@ -274,11 +284,24 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
 
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
-                    onClick={() => setSelectedPromoModal(promo)}
+                    onClick={() => {
+                      if (promo.link_url && promo.link_url.trim()) {
+                        // Форматуємо URL (якщо ввели без https://)
+                        const targetUrl = promo.link_url.startsWith('http')
+                          ? promo.link_url
+                          : `https://${promo.link_url}`;
+
+                        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                      } else {
+                        // Якщо посилання не заповнили, переводимо на сторінку закладу
+                        navigate(`/place/${promo.place_id}`);
+                      }
+                    }}
                     style={{ flex: 1, background: '#6366f1', color: '#fff', border: 'none', padding: '10px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
                   >
                     🎁 Забрати
                   </button>
+
                   <button
                     onClick={() => navigate(`/place/${promo.place_id}`)}
                     style={{ background: '#f1f5f9', color: '#334155', border: 'none', padding: '10px 14px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
@@ -418,7 +441,14 @@ function PlacePage() {
 // 4. СТОРІНКА АВТОРИЗАЦІЇЗ ВАЛІДАЦІЄЮ
 // ==========================================
 function AuthPage({ onAuthSuccess, showToast }) {
-  const [isRegister, setIsRegister] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Отримуємо переданий режим з кнопок шапки
+  const [isRegister, setIsRegister] = useState(() => {
+    return location.state?.isRegister !== undefined ? location.state.isRegister : false;
+  });
+
   const [accountType, setAccountType] = useState('user');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -427,7 +457,84 @@ function AuthPage({ onAuthSuccess, showToast }) {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [generalError, setGeneralError] = useState('');
-  const navigate = useNavigate();
+
+  // Всередині компонента AuthPage:
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+
+  const handleForgotSubmit = (e) => {
+    e.preventDefault();
+    axios.post(`${API_URL}/auth/forgot-password`, { email: forgotEmail })
+      .then(res => {
+        showToast(res.data.message, 'success');
+        setShowForgotModal(false);
+        setForgotEmail('');
+      })
+      .catch(err => showToast(err.response?.data?.error || 'Помилка відправки', 'error'));
+  };
+
+  // ... У формі авторизації (коли !isRegister) під полем пароля додайте кнопку:
+  {
+    !isRegister && (
+      <div style={{ textAlign: 'right', marginTop: '-6px', marginBottom: '8px' }}>
+        <span
+          onClick={() => setShowForgotModal(true)}
+          style={{ fontSize: '12px', color: '#6366f1', fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          Забули пароль?
+        </span>
+      </div>
+    )
+  }
+
+  // ... У кінці повернення JSX AuthPage додайте модальне вікно:
+  {
+    showForgotModal && (
+      <div className="modal-overlay">
+        <div className="modal" style={{ maxWidth: '400px', padding: '24px', borderRadius: '20px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Відновлення пароля</h3>
+          <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+            Введіть email, прив'язаний до акаунту. Ми надішлемо посилання для відновлення.
+          </p>
+
+          <form onSubmit={handleForgotSubmit}>
+            <input
+              type="email"
+              className="input-field"
+              placeholder="Ваш e-mail..."
+              value={forgotEmail}
+              onChange={e => setForgotEmail(e.target.value)}
+              required
+            />
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              <button
+                type="submit"
+                style={{ flex: 1, background: '#6366f1', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Надіслати
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowForgotModal(false)}
+                style={{ padding: '10px 16px', borderRadius: '10px' }}
+              >
+                Скасувати
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  // Реагуємо на зміну режиму при кліках у шапці
+  useEffect(() => {
+    if (location.state?.isRegister !== undefined) {
+      setIsRegister(location.state.isRegister);
+    }
+  }, [location.state]);
 
   const validateEmail = (val) => {
     setEmail(val);
@@ -597,6 +704,7 @@ function MerchantCabinet({ user, token, showToast }) {
   const [logoUrl, setLogoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [imageInputType, setImageInputType] = useState('url'); // 'url' або 'file'
+  const [promoLink, setPromoLink] = useState('');
 
   const defaultCategories = [
     { id: 1, name: "Кав'ярні та кафе", icon: '☕', slug: 'kavyarni-ta-kafe' },
@@ -682,6 +790,7 @@ function MerchantCabinet({ user, token, showToast }) {
       place_id: parseInt(selectedPlaceId, 10),
       title: promoTitle,
       discount_value: promoDiscount,
+      link_url: promoLink, // Передаємо посилання на акцію
       start_date: new Date().toISOString(),
       end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     }, { headers: { Authorization: `Bearer ${token}` } })
@@ -689,6 +798,7 @@ function MerchantCabinet({ user, token, showToast }) {
         showToast('Акцію створено!', 'success');
         setShowAddPromoModal(false);
         setPromoTitle('');
+        setPromoLink(''); // Очищаємо поле
         fetchMyData();
       })
       .catch(err => showToast(err.response?.data?.error || 'Помилка розміщення акції', 'error'));
@@ -949,8 +1059,32 @@ function MerchantCabinet({ user, token, showToast }) {
               <select className="input-field" value={selectedPlaceId} onChange={e => setSelectedPlaceId(e.target.value)} required>
                 {myPlaces.map(p => <option key={p.id} value={p.id}>{p.name} ({p.address})</option>)}
               </select>
-              <input className="input-field" placeholder="Заголовок (наприклад -30% на велику піцу)" value={promoTitle} onChange={e => setPromoTitle(e.target.value)} required />
-              <input className="input-field" placeholder="Розмір знижки (наприклад -30% або 1+1)" value={promoDiscount} onChange={e => setPromoDiscount(e.target.value)} required />
+
+              <input
+                className="input-field"
+                placeholder="Заголовок (наприклад -30% на велику піцу)"
+                value={promoTitle}
+                onChange={e => setPromoTitle(e.target.value)}
+                required
+              />
+
+              <input
+                className="input-field"
+                placeholder="Розмір знижки (наприклад -30% або 1+1)"
+                value={promoDiscount}
+                onChange={e => setPromoDiscount(e.target.value)}
+                required
+              />
+
+              {/* ПОЛЕ ВВОДУ ПОСИЛАННЯ НА НА АКЦІЮ / САЙТ */}
+              <input
+                type="url"
+                className="input-field"
+                placeholder="Посилання на сайт/акцію (напр. https://site.com/promo)"
+                value={promoLink}
+                onChange={e => setPromoLink(e.target.value)}
+              />
+
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setShowAddPromoModal(false)}>Скасувати</button>
                 <button type="submit" className="button" style={{ width: 'auto' }}>Опублікувати</button>
@@ -1362,12 +1496,13 @@ export default function App() {
           element={currentUser?.role === 'admin' ? <AdminPanel token={token} showToast={showToast} /> : <Navigate to="/" />}
         />
         <Route path="/favorites" element={<FavoritesPage token={token} user={currentUser} showToast={showToast} />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage showToast={showToast} />} />
       </Routes>
 
       {/* 📍 МОДАЛЬНЕ ВІКНО ВИБОРУ МІСТА */}
       {showRegionModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: '420px', borderRadius: '20px', padding: '24px' }}>
+          <div className="modal" style={{ maxWidth: '420px', borderRadius: '20px', padding: '40px' }}>
             <h3 style={{ marginBottom: '16px', fontSize: '20px', fontWeight: 'bold' }}>Оберіть місто</h3>
 
             <input
@@ -1456,5 +1591,65 @@ export default function App() {
         </div>
       )}
     </BrowserRouter>
+  );
+}
+
+// ==========================================
+// СТОРІНКА ВСТАНОВЛЕННЯ НОВОГО ПАРОЛЯ
+// ==========================================
+function ResetPasswordPage({ showToast }) {
+  const { token } = useParams();
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      showToast('Паролі не збігаються!', 'error');
+      return;
+    }
+
+    axios.post(`${API_URL}/auth/reset-password`, { token, newPassword })
+      .then(res => {
+        showToast(res.data.message, 'success');
+        navigate('/login', { state: { isRegister: false } });
+      })
+      .catch(err => showToast(err.response?.data?.error || 'Помилка скидання пароля', 'error'));
+  };
+
+  return (
+    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ background: '#fff', padding: '36px', borderRadius: '24px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>Новий пароль</h2>
+        <p style={{ color: '#64748b', fontSize: '13px', textAlign: 'center', marginBottom: '20px' }}>
+          Введіть та підтвердіть свій новий пароль
+        </p>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <input
+            type="password"
+            className="input-field"
+            placeholder="Новий пароль (мін. 6 символів)"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            className="input-field"
+            placeholder="Підтвердіть новий пароль"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            required
+          />
+
+          <button type="submit" style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+            Зберегти новий пароль
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
