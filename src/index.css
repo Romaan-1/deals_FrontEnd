@@ -1,0 +1,308 @@
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 32px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 800;
+  color: #6c5ce7;
+  margin: 0;
+}
+
+.region-tag {
+  background: #f1f5f9;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 280px !important;
+  height: auto !important;
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 20px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  position: relative !important;
+  border: 1px solid #f1f5f9 !important;
+}
+
+body.dark-mode .card {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.badge {
+  background-color: #ff6b6b;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.card-desc {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.place-info {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.address {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 16px;
+}
+
+.button {
+  background-color: #6c5ce7;
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: #5a4ad1;
+}
+
+/* Категорії */
+.categories-bar {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.category-pill {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-pill:hover {
+  border-color: #6c5ce7;
+  color: #6c5ce7;
+}
+
+.category-pill.active {
+  background: #6c5ce7;
+  color: #ffffff;
+  border-color: #6c5ce7;
+}
+
+.add-pill {
+  background: #f1f5f9;
+  border: 1px dashed #94a3b8;
+  color: #6c5ce7;
+}
+
+/* Вибір міста */
+.region-select-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Модальне вікно */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 28px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ==========================================
+   🌙 ТЕМНА ТЕМА (DARK MODE GLOBAL FIX)
+   ========================================== */
+
+/* 1. Загальний фон та колір тексту */
+body.dark-mode {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+/* 2. Шапка, картки, модальні вікна та блоки */
+body.dark-mode header,
+body.dark-mode .header,
+body.dark-mode .modal,
+body.dark-mode div[style*="background: #fff"],
+body.dark-mode div[style*="background: rgb(255, 255, 255)"],
+body.dark-mode div[style*="background-color: #fff"] {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 3. Всі заголовки та параграфи */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6,
+body.dark-mode strong,
+body.dark-mode b {
+  color: #ffffff !important;
+}
+
+body.dark-mode p,
+body.dark-mode span,
+body.dark-mode label,
+body.dark-mode div {
+  color: #cbd5e1;
+}
+
+/* 4. Поля вводу (Input, Select) */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 5. Кнопки зі світлим фоном */
+body.dark-mode button[style*="background: #f1f5f9"],
+body.dark-mode button[style*="background: #f8fafc"] {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+/* 6. Таблиці (Кабінет закладу / Адмін-панель) */
+body.dark-mode table,
+body.dark-mode tr,
+body.dark-mode td,
+body.dark-mode th {
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+/* 7. Захист кольорових плашок (акценти не псуються) */
+body.dark-mode span[style*="background: #ef4444"],
+body.dark-mode button[style*="background: #6366f1"],
+body.dark-mode button[style*="background: #10b981"] {
+  color: #ffffff !important;
+}
