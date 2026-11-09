@@ -385,53 +385,157 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
 // ==========================================
 function PlacePage() {
   const { id } = useParams();
-  const [placeData, setPlaceData] = useState(null);
-  const navigate = useNavigate();
+  const [place, setPlace] = useState(null);
+  const [promos, setPromos] = useState([]);
+  const [reviews, setReviews] = useState([]);
+
+  // Стан форми відгуку
+  const [userRating, setUserRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Завантаження даних закладу та відгуків
+  const fetchPlaceDetails = () => {
+    axios.get(`${API_URL}/places/${id}`)
+      .then(res => setPlace(res.data))
+      .catch(err => console.error(err));
+
+    axios.get(`${API_URL}/places/${id}/promotions`)
+      .then(res => setPromos(res.data))
+      .catch(err => console.error(err));
+
+    axios.get(`${API_URL}/places/${id}/reviews`)
+      .then(res => setReviews(res.data))
+      .catch(err => console.error(err));
+  };
 
   useEffect(() => {
-    axios.get(`${API_URL}/places/${id}`)
-      .then(res => setPlaceData(res.data))
-      .catch(() => { });
+    fetchPlaceDetails();
   }, [id]);
 
-  if (!placeData) return <div style={{ padding: '40px', textAlign: 'center' }}>Завантаження сторінки закладу...</div>;
+  // Відправка відгуку
+  const handleSubmitReview = (e) => {
+    e.preventDefault();
+    if (!token) {
+      showToast('Авторизуйтесь, щоб залишити відгук', 'error');
+      return;
+    }
 
-  const { place, promotions } = placeData;
+    setSubmitting(true);
+    axios.post(`${API_URL}/places/${id}/reviews`, {
+      rating: userRating,
+      comment
+    }, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        showToast(res.data.message, 'success');
+        setComment('');
+        fetchPlaceDetails(); // Оновлюємо відгуки та новий середній рейтинг
+      })
+      .catch(err => showToast(err.response?.data?.error || 'Помилка збереження', 'error'))
+      .finally(() => setSubmitting(false));
+  };
+
+  if (!place) return <div style={{ padding: '40px', textAlign: 'center' }}>⏳ Завантаження закладу...</div>;
 
   return (
-    <div className="container" style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 16px' }}>
-      <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#6366f1', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px' }}>
-        ← На головну
-      </button>
-
-      <div style={{ position: 'relative', height: '200px', background: '#334155', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '32px', fontWeight: 'bold' }}>
-        {place.name.toUpperCase()}
-        <div style={{ position: 'absolute', bottom: '-24px', left: '32px', width: '80px', height: '80px', borderRadius: '20px', background: '#fff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', overflow: 'hidden' }}>
-          {place.logo_url && place.logo_url.startsWith('http') ? (
-            <img src={place.logo_url} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <span>{place.logo_url || '🥐'}</span>
-          )}
-        </div>
-      </div>
-
-      <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
+      {/* Шапка закладу */}
+      <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
+        <img
+          src={place.logo_url || 'https://via.placeholder.com/100'}
+          alt={place.name}
+          style={{ width: '90px', height: '90px', borderRadius: '16px', objectFit: 'cover' }}
+        />
         <div>
-          <h2 style={{ fontSize: '28px', fontWeight: 'bold' }}>{place.name}</h2>
-          <p style={{ color: '#64748b', marginTop: '4px' }}>⭐ {place.rating || '4.8'} • 📍 {place.address}, {place.region_name}</p>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '4px' }}>{place.name}</h1>
+          <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '8px' }}>📍 {place.address}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ background: '#fef3c7', color: '#d97706', padding: '4px 10px', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px' }}>
+              ⭐ {place.rating ? Number(place.rating).toFixed(1) : 'Новий'} / 5.0
+            </span>
+            <span style={{ color: '#94a3b8', fontSize: '13px' }}>({reviews.length} відгуків)</span>
+          </div>
         </div>
       </div>
 
-      <h3 style={{ marginTop: '32px', marginBottom: '16px', fontSize: '20px', fontWeight: 'bold' }}>Активні акції закладу ({promotions.length})</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-        {promotions.map(promo => (
-          <div key={promo.id} style={{ background: '#fff', borderRadius: '20px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <span style={{ background: '#ef4444', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>{promo.discount_value}</span>
-            <h4 style={{ fontSize: '16px', fontWeight: 'bold', margin: '12px 0 8px 0' }}>{promo.title}</h4>
-            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>{promo.description}</p>
-            <button style={{ width: '100%', background: '#6366f1', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Отримати купон</button>
+      {/* Секція активних акцій */}
+      <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '14px' }}>🔥 Акції закладу ({promos.length})</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px', marginBottom: '36px' }}>
+        {promos.map(p => (
+          <div key={p.id} style={{ background: '#fff', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ fontWeight: 'bold', marginBottom: '6px' }}>{p.title}</h4>
+            <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '14px' }}>{p.discount_value}</span>
           </div>
         ))}
+      </div>
+
+      {/* Секція Відгуків */}
+      <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>💬 Відгуки та оцінки</h3>
+
+        {/* Форма додавання відгуку */}
+        {user ? (
+          <form onSubmit={handleSubmitReview} style={{ background: '#f8fafc', padding: '18px', borderRadius: '16px', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>Ваша оцінка:</label>
+
+            {/* Інтерактивні зірочки */}
+            <div style={{ display: 'flex', gap: '6px', fontSize: '26px', cursor: 'pointer', marginBottom: '14px' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  onClick={() => setUserRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  style={{ color: star <= (hoverRating || userRating) ? '#f59e0b' : '#cbd5e1', transition: 'color 0.15s' }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+
+            <textarea
+              className="input-field"
+              placeholder="Поділіться вашими враженнями про заклад..."
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              rows="3"
+              style={{ width: '100%', borderRadius: '12px', padding: '10px', fontSize: '14px', resize: 'vertical' }}
+            />
+
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
+            >
+              {submitting ? 'Збереження...' : 'Залишити відгук'}
+            </button>
+          </form>
+        ) : (
+          <div style={{ padding: '14px', background: '#eef2ff', color: '#4338ca', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', marginBottom: '24px', textAlign: 'center' }}>
+            🔒 Увійдіть в акаунт, щоб залишити відгук про заклад
+          </div>
+        )}
+
+        {/* Список коментарів */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {reviews.length === 0 ? (
+            <p style={{ color: '#94a3b8', fontSize: '14px' }}>Поки що немає відгуків. Будьте першим!</p>
+          ) : (
+            reviews.map(rev => (
+              <div key={rev.id} style={{ padding: '14px', borderRadius: '12px', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{rev.full_name}</span>
+                  <span style={{ color: '#f59e0b', fontSize: '13px' }}>{'★'.repeat(rev.rating)}</span>
+                </div>
+                {rev.comment && <p style={{ color: '#334155', fontSize: '13px', marginTop: '4px' }}>{rev.comment}</p>}
+                <span style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '6px' }}>
+                  {new Date(rev.created_at).toLocaleDateString()}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
