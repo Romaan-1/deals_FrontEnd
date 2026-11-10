@@ -117,10 +117,12 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
   useEffect(() => {
     let url = `${API_URL}/promotions?`;
     if (selectedCategory) url += `category_id=${selectedCategory}&`;
-    if (activeRegion) url += `region_id=${activeRegion.id}&`;
-    if (searchQuery) url += `search=${encodeURIComponent(searchQuery)}&`;
+    if (activeRegion && activeRegion.id) url += `region_id=${activeRegion.id}&`;
+    if (searchQuery && searchQuery.trim()) url += `search=${encodeURIComponent(searchQuery.trim())}&`;
 
-    axios.get(url).then(res => setPromotions(res.data)).catch(() => { });
+    axios.get(url)
+      .then(res => setPromotions(res.data))
+      .catch(err => console.error("Помилка завантаження акцій:", err));
   }, [selectedCategory, activeRegion, searchQuery]);
 
   useEffect(() => {
@@ -1313,20 +1315,32 @@ function FavoritesPage({ token, user, showToast }) {
 // 7. АДМІН-ПАНЕЛЬ (/admin)
 // ==========================================
 function AdminPanel({ token, showToast }) {
-  const [activeTab, setActiveTab] = useState('places');
+  const [activeTab, setActiveTab] = useState('stats');
+  const [stats, setStats] = useState(null);
   const [pendingPlaces, setPendingPlaces] = useState([]);
   const [users, setUsers] = useState([]);
   const [promotions, setPromotions] = useState([]);
 
   const loadData = () => {
+    // Завантаження статистики
+    axios.get(`${API_URL}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setStats(res.data))
+      .catch(() => { });
+
+    // Запити закладів
     axios.get(`${API_URL}/admin/places/pending`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => setPendingPlaces(res.data)).catch(() => { });
+      .then(res => setPendingPlaces(res.data))
+      .catch(() => { });
 
+    // Користувачі
     axios.get(`${API_URL}/admin/users`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => setUsers(res.data)).catch(() => { });
+      .then(res => setUsers(res.data))
+      .catch(() => { });
 
+    // Акції
     axios.get(`${API_URL}/promotions`)
-      .then(res => setPromotions(res.data)).catch(() => { });
+      .then(res => setPromotions(res.data))
+      .catch(() => { });
   };
 
   useEffect(() => {
@@ -1336,7 +1350,7 @@ function AdminPanel({ token, showToast }) {
   const handleApprovePlace = (id, isApproved) => {
     axios.put(`${API_URL}/admin/places/${id}/approve`, { is_verified: isApproved }, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        showToast(isApproved ? 'Заклад успішно підтверджено!' : 'Запит відхилено', 'success');
+        showToast(isApproved ? 'Заклад підтверджено!' : 'Запит відхилено', 'success');
         loadData();
       });
   };
@@ -1344,7 +1358,7 @@ function AdminPanel({ token, showToast }) {
   const handleChangeRole = (userId, newRole) => {
     axios.put(`${API_URL}/admin/users/${userId}/role`, { role: newRole }, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        showToast('Роль успішно змінено!', 'success');
+        showToast('Роль змінено!', 'success');
         loadData();
       });
   };
@@ -1353,8 +1367,11 @@ function AdminPanel({ token, showToast }) {
     if (!window.confirm('Видалити цю акцію як адміністратор?')) return;
     axios.delete(`${API_URL}/promotions/${promoId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(() => {
-        showToast('Акцію видалено', 'success');
+        showToast('Акцію видалено!', 'success');
         loadData();
+      })
+      .catch(err => {
+        showToast(err.response?.data?.error || 'Помилка видалення акції', 'error');
       });
   };
 
@@ -1362,12 +1379,21 @@ function AdminPanel({ token, showToast }) {
     <div style={{ minHeight: '100vh', background: '#0f172a', color: '#f8fafc', padding: '24px' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}><span style={{ color: '#818cf8' }}>Promo</span> | Admin Panel</h2>
+          <h2 style={{ fontSize: '22px', fontWeight: 'bold' }}>
+            <span style={{ color: '#818cf8' }}>Promo</span> | Admin Panel
+          </h2>
           <span style={{ fontWeight: 'bold', color: '#94a3b8' }}>SuperAdmin 🛡️</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '24px' }}>
+          {/* Бічна навігація */}
           <div style={{ background: '#1e293b', borderRadius: '16px', padding: '16px', height: 'fit-content' }}>
+            <div
+              onClick={() => setActiveTab('stats')}
+              style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'stats' ? '#334155' : 'transparent', fontWeight: '600', color: '#fff', cursor: 'pointer', marginBottom: '6px' }}
+            >
+              Статистика
+            </div>
             <div
               onClick={() => setActiveTab('places')}
               style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'places' ? '#334155' : 'transparent', fontWeight: '600', color: '#fff', cursor: 'pointer', marginBottom: '6px' }}
@@ -1388,7 +1414,56 @@ function AdminPanel({ token, showToast }) {
             </div>
           </div>
 
+          {/* Основний вміст */}
           <div style={{ background: '#1e293b', borderRadius: '16px', padding: '24px' }}>
+            {/* ВКЛАДКА: СТАТИСТИКА */}
+            {activeTab === 'stats' && (
+              <>
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Загальна статистика платформи</h3>
+                {stats ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+
+                    {/* Картка закладів */}
+                    <div style={{ background: '#0f172a', padding: '20px', borderRadius: '14px', border: '1px solid #334155' }}>
+                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>🏢</div>
+                      <h4 style={{ fontSize: '14px', color: '#94a3b8', margin: 0 }}>Всього закладів</h4>
+                      <p style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 12px 0', color: '#38bdf8' }}>{stats.places.total}</p>
+                      <div style={{ fontSize: '12px', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Підтверджені: <strong style={{ color: '#34d399' }}>{stats.places.verified}</strong></span>
+                        <span>Очікують: <strong style={{ color: '#fbbf24' }}>{stats.places.pending}</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Картка акцій */}
+                    <div style={{ background: '#0f172a', padding: '20px', borderRadius: '14px', border: '1px solid #334155' }}>
+                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎁</div>
+                      <h4 style={{ fontSize: '14px', color: '#94a3b8', margin: 0 }}>Всього акцій</h4>
+                      <p style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 12px 0', color: '#f43f5e' }}>{stats.promotions.total}</p>
+                      <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                        <span>Активних зараз: <strong style={{ color: '#34d399' }}>{stats.promotions.active}</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Картка користувачів */}
+                    <div style={{ background: '#0f172a', padding: '20px', borderRadius: '14px', border: '1px solid #334155' }}>
+                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>👥</div>
+                      <h4 style={{ fontSize: '14px', color: '#94a3b8', margin: 0 }}>Користувачі</h4>
+                      <p style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 12px 0', color: '#a855f7' }}>{stats.users.total}</p>
+                      <div style={{ fontSize: '12px', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span>Клієнти: <strong>{stats.users.users_count}</strong></span>
+                        <span>Продавці (Merchant): <strong style={{ color: '#818cf8' }}>{stats.users.merchants_count}</strong></span>
+                        <span>Адміни: <strong style={{ color: '#f43f5e' }}>{stats.users.admins_count}</strong></span>
+                      </div>
+                    </div>
+
+                  </div>
+                ) : (
+                  <p style={{ color: '#94a3b8' }}>Завантаження статистики...</p>
+                )}
+              </>
+            )}
+
+            {/* ВКЛАДКА: ЗАПИТИ ЗАКЛАДІВ */}
             {activeTab === 'places' && (
               <>
                 <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Запити на підтвердження закладів</h3>
@@ -1420,6 +1495,7 @@ function AdminPanel({ token, showToast }) {
               </>
             )}
 
+            {/* ВКЛАДКА: КОРИСТУВАЧІ */}
             {activeTab === 'users' && (
               <>
                 <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Управління користувачами</h3>
@@ -1454,6 +1530,7 @@ function AdminPanel({ token, showToast }) {
               </>
             )}
 
+            {/* ВКЛАДКА: МОДЕРАЦІЯ АКЦІЙ */}
             {activeTab === 'promos' && (
               <>
                 <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Модерація акцій платформи</h3>
@@ -1474,7 +1551,7 @@ function AdminPanel({ token, showToast }) {
                         <td style={{ padding: '14px 12px', color: '#f87171', fontWeight: 'bold' }}>{p.discount_value}</td>
                         <td style={{ padding: '14px 12px' }}>
                           <button onClick={() => handleDeletePromo(p.id)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            🗑️ Видалити
+                            Видалити
                           </button>
                         </td>
                       </tr>
