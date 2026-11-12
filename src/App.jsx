@@ -178,19 +178,39 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
         </p>
       </div>
 
-      <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>Категорії</h3>
-      <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '32px' }}>
+      <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '14px' }}>Категорії</h3>
+      <div
+        className="categories-scroll"
+        onWheel={(e) => {
+          if (e.deltaY !== 0) {
+            e.currentTarget.scrollLeft += e.deltaY;
+          }
+        }}
+      >
         <button
           onClick={() => setSelectedCategory(null)}
-          style={{ padding: '12px 20px', borderRadius: '16px', border: 'none', background: selectedCategory === null ? '#6366f1' : '#fff', color: selectedCategory === null ? '#fff' : '#1e293b', fontWeight: '600', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+          className="category-chip"
+          style={{
+            background: selectedCategory === null ? '#6366f1' : '#fff',
+            color: selectedCategory === null ? '#fff' : '#1e293b',
+            borderColor: selectedCategory === null ? '#6366f1' : '#e2e8f0',
+            boxShadow: selectedCategory === null ? '0 4px 12px rgba(99, 102, 241, 0.25)' : '0 1px 2px rgba(0,0,0,0.04)'
+          }}
         >
           ✨ Всі
         </button>
+
         {categories.map(cat => (
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            style={{ padding: '12px 20px', borderRadius: '16px', border: 'none', background: selectedCategory === cat.id ? '#6366f1' : '#fff', color: selectedCategory === cat.id ? '#fff' : '#1e293b', fontWeight: '600', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '8px' }}
+            className="category-chip"
+            style={{
+              background: selectedCategory === cat.id ? '#6366f1' : '#fff',
+              color: selectedCategory === cat.id ? '#fff' : '#1e293b',
+              borderColor: selectedCategory === cat.id ? '#6366f1' : '#e2e8f0',
+              boxShadow: selectedCategory === cat.id ? '0 4px 12px rgba(99, 102, 241, 0.25)' : '0 1px 2px rgba(0,0,0,0.04)'
+            }}
           >
             <span>{cat.icon || '🏷️'}</span> {cat.name}
           </button>
@@ -367,17 +387,7 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
         </div>
       )}
 
-      <footer style={{ marginTop: '60px', background: '#fff', borderTop: '1px solid #e2e8f0', padding: '32px 16px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ fontWeight: '800', color: '#6366f1', fontSize: '20px' }}>Promo</div>
-          <div>© 2026 Promo. Усі права захищено. Платформа локальних знижок та акцій.</div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Про нас</a>
-            <a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Для бізнесу</a>
-            <a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Підтримка</a>
-          </div>
-        </div>
-      </footer>
+
     </div>
   );
 }
@@ -385,159 +395,210 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
 // ==========================================
 // 3. СТОРІНКА ЗАКЛАДУ (/place/:id)
 // ==========================================
-function PlacePage() {
+function PlacePage({ token, user, showToast }) {
   const { id } = useParams();
-  const [place, setPlace] = useState(null);
-  const [promos, setPromos] = useState([]);
-  const [reviews, setReviews] = useState([]);
+  const navigate = useNavigate();
 
-  // Стан форми відгуку
-  const [userRating, setUserRating] = useState(5);
-  const [hoverRating, setHoverRating] = useState(0);
+  const [placeData, setPlaceData] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Завантаження даних закладу та відгуків
+  // 🔄 Завантаження інформації про заклад та його відгуків
   const fetchPlaceDetails = () => {
     axios.get(`${API_URL}/places/${id}`)
-      .then(res => setPlace(res.data))
-      .catch(err => console.error(err));
-
-    axios.get(`${API_URL}/places/${id}/promotions`)
-      .then(res => setPromos(res.data))
-      .catch(err => console.error(err));
+      .then(res => setPlaceData(res.data))
+      .catch(() => { });
 
     axios.get(`${API_URL}/places/${id}/reviews`)
       .then(res => setReviews(res.data))
-      .catch(err => console.error(err));
+      .catch(() => { });
   };
 
   useEffect(() => {
     fetchPlaceDetails();
   }, [id]);
 
-  // Відправка відгуку
-  const handleSubmitReview = (e) => {
+  // 📝 Відправка нового відгуку
+  const handleAddReview = (e) => {
     e.preventDefault();
     if (!token) {
-      showToast('Авторизуйтесь, щоб залишити відгук', 'error');
-      return;
+      if (showToast) showToast('Будь ласка, увійдіть в акаунт, щоб залишити відгук', 'error');
+      return navigate('/login');
     }
 
     setSubmitting(true);
-    axios.post(`${API_URL}/places/${id}/reviews`, {
-      rating: userRating,
-      comment
-    }, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => {
-        showToast(res.data.message, 'success');
+    axios.post(
+      `${API_URL}/places/${id}/reviews`,
+      { rating: Number(rating), comment },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .then(() => {
+        if (showToast) showToast('Дякуємо! Ваш відгук успішно додано.', 'success');
         setComment('');
-        fetchPlaceDetails(); // Оновлюємо відгуки та новий середній рейтинг
+        fetchPlaceDetails(); // Оновлюємо список відгуків та середній рейтинг закладу
       })
-      .catch(err => showToast(err.response?.data?.error || 'Помилка збереження', 'error'))
+      .catch(err => {
+        const errorMsg = err.response?.data?.error || 'Помилка при збереженні відгуку';
+        if (showToast) showToast(errorMsg, 'error');
+      })
       .finally(() => setSubmitting(false));
   };
 
-  if (!place) return <div style={{ padding: '40px', textAlign: 'center' }}>⏳ Завантаження закладу...</div>;
+  if (!placeData) return <div style={{ padding: '40px', textAlign: 'center' }}>Завантаження сторінки закладу...</div>;
+
+  const { place, promotions } = placeData;
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
-      {/* Шапка закладу */}
-      <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginBottom: '24px' }}>
-        <img
-          src={place.logo_url || 'https://via.placeholder.com/100'}
-          alt={place.name}
-          style={{ width: '90px', height: '90px', borderRadius: '16px', objectFit: 'cover' }}
-        />
-        <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '4px' }}>{place.name}</h1>
-          <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '8px' }}>📍 {place.address}</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ background: '#fef3c7', color: '#d97706', padding: '4px 10px', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px' }}>
-              ⭐ {place.rating ? Number(place.rating).toFixed(1) : 'Новий'} / 5.0
-            </span>
-            <span style={{ color: '#94a3b8', fontSize: '13px' }}>({reviews.length} відгуків)</span>
-          </div>
-        </div>
-      </div>
+    <div className="container" style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 16px' }}>
+      <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: '#6366f1', fontWeight: 'bold', cursor: 'pointer', marginBottom: '16px' }}>
+        ← На головну
+      </button>
 
-      {/* Секція активних акцій */}
-      <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '14px' }}>🔥 Акції закладу ({promos.length})</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px', marginBottom: '36px' }}>
-        {promos.map(p => (
-          <div key={p.id} style={{ background: '#fff', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-            <h4 style={{ fontWeight: 'bold', marginBottom: '6px' }}>{p.title}</h4>
-            <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '14px' }}>{p.discount_value}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Секція Відгуків */}
-      <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>💬 Відгуки та оцінки</h3>
-
-        {/* Форма додавання відгуку */}
-        {user ? (
-          <form onSubmit={handleSubmitReview} style={{ background: '#f8fafc', padding: '18px', borderRadius: '16px', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>Ваша оцінка:</label>
-
-            {/* Інтерактивні зірочки */}
-            <div style={{ display: 'flex', gap: '6px', fontSize: '26px', cursor: 'pointer', marginBottom: '14px' }}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span
-                  key={star}
-                  onClick={() => setUserRating(star)}
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
-                  style={{ color: star <= (hoverRating || userRating) ? '#f59e0b' : '#cbd5e1', transition: 'color 0.15s' }}
-                >
-                  ★
-                </span>
-              ))}
-            </div>
-
-            <textarea
-              className="input-field"
-              placeholder="Поділіться вашими враженнями про заклад..."
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              rows="3"
-              style={{ width: '100%', borderRadius: '12px', padding: '10px', fontSize: '14px', resize: 'vertical' }}
-            />
-
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
-            >
-              {submitting ? 'Збереження...' : 'Залишити відгук'}
-            </button>
-          </form>
-        ) : (
-          <div style={{ padding: '14px', background: '#eef2ff', color: '#4338ca', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', marginBottom: '24px', textAlign: 'center' }}>
-            🔒 Увійдіть в акаунт, щоб залишити відгук про заклад
-          </div>
-        )}
-
-        {/* Список коментарів */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {reviews.length === 0 ? (
-            <p style={{ color: '#94a3b8', fontSize: '14px' }}>Поки що немає відгуків. Будьте першим!</p>
+      {/* Баннер та логотип закладу */}
+      <div style={{ position: 'relative', height: '200px', background: '#334155', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '32px', fontWeight: 'bold' }}>
+        {place.name.toUpperCase()}
+        <div style={{ position: 'absolute', bottom: '-24px', left: '32px', width: '80px', height: '80px', borderRadius: '20px', background: '#fff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', overflow: 'hidden' }}>
+          {place.logo_url && place.logo_url.startsWith('http') ? (
+            <img src={place.logo_url} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            reviews.map(rev => (
-              <div key={rev.id} style={{ padding: '14px', borderRadius: '12px', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{rev.full_name}</span>
-                  <span style={{ color: '#f59e0b', fontSize: '13px' }}>{'★'.repeat(rev.rating)}</span>
-                </div>
-                {rev.comment && <p style={{ color: '#334155', fontSize: '13px', marginTop: '4px' }}>{rev.comment}</p>}
-                <span style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginTop: '6px' }}>
-                  {new Date(rev.created_at).toLocaleDateString()}
-                </span>
-              </div>
-            ))
+            <span>{place.logo_url || '🏬'}</span>
           )}
         </div>
+      </div>
+
+      {/* Назва, рейтинг та адреса */}
+      <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ fontSize: '28px', fontWeight: 'bold' }}>{place.name}</h2>
+          <p style={{ color: '#64748b', marginTop: '4px' }}>
+            ⭐ <strong style={{ color: '#1e293b' }}>{place.rating || '4.8'}</strong> ({reviews.length} відгуків) • 📍 {place.address}, {place.region_name}
+          </p>
+        </div>
+      </div>
+
+      {/* Список активних акцій */}
+      <h3 style={{ marginTop: '32px', marginBottom: '16px', fontSize: '20px', fontWeight: 'bold' }}>
+        🔥 Активні акції закладу ({promotions.length})
+      </h3>
+
+      {promotions.length === 0 ? (
+        <p style={{ color: '#64748b' }}>Наразі у цього закладу немає активних акцій.</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          {promotions.map(promo => (
+            <div key={promo.id} style={{ background: '#fff', borderRadius: '20px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <span style={{ background: '#ef4444', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
+                {promo.discount_value}
+              </span>
+              <h4 style={{ fontSize: '16px', fontWeight: 'bold', margin: '12px 0 8px 0' }}>{promo.title}</h4>
+              <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '12px' }}>{promo.description}</p>
+              {promo.link_url && (
+                <a href={promo.link_url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: '#6366f1', color: '#fff', padding: '8px 16px', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px' }}>
+                  🎁 Отримати знижку
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ⭐️ РОЗДІЛ ВІДГУКІВ ТА ОЦІНОК */}
+      <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #e2e8f0' }}>
+        <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '24px' }}>
+          💬 Відгуки відвідувачів ({reviews.length})
+        </h3>
+
+        {/* Форма публікації відгуку */}
+        <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', marginBottom: '32px' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px' }}>
+            {user ? 'Залишити свій відгук' : 'Увійдіть, щоб залишити відгук'}
+          </h4>
+
+          {user ? (
+            <form onSubmit={handleAddReview}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', color: '#475569', marginBottom: '6px', fontWeight: 'bold' }}>
+                  Ваша оцінка:
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '24px',
+                        cursor: 'pointer',
+                        filter: star <= rating ? 'none' : 'grayscale(100%) opacity(30%)',
+                        transform: star <= rating ? 'scale(1.1)' : 'scale(1)',
+                        transition: 'all 0.1s'
+                      }}
+                    >
+                      ⭐
+                    </button>
+                  ))}
+                  <span style={{ alignSelf: 'center', fontWeight: 'bold', marginLeft: '8px', color: '#6366f1' }}>
+                    {rating} / 5
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <textarea
+                  placeholder="Поділіться враженнями про заклад або акцію..."
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  rows={3}
+                  required
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', resize: 'vertical' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                {submitting ? 'Опублікування...' : 'Опублікувати відгук'}
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => navigate('/login')}
+              style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              🔐 Увійти для написання відгуку
+            </button>
+          )}
+        </div>
+
+        {/* Список відгуків */}
+        {reviews.length === 0 ? (
+          <p style={{ color: '#64748b' }}>Будьте першим, хто залишить відгук про цей заклад!</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {reviews.map(r => (
+              <div key={r.id} style={{ background: '#fff', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{r.full_name}</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <div style={{ color: '#fbbf24', fontSize: '14px', marginBottom: '6px' }}>
+                  {'⭐'.repeat(r.rating)} <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 'bold' }}>({r.rating}/5)</span>
+                </div>
+                <p style={{ color: '#334155', fontSize: '14px', margin: 0, lineHeight: '1.5' }}>
+                  {r.comment}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1567,6 +1628,43 @@ function AdminPanel({ token, showToast }) {
   );
 }
 
+// ПІДВАЛ САЙТУ (FULL-WIDTH FOOTER)
+// ==========================================
+function Footer() {
+  return (
+    <footer style={{
+      width: '100%',
+      marginTop: 'auto',
+      background: '#fff',
+      borderTop: '1px solid #e2e8f0',
+      padding: '28px 32px',
+      color: '#64748b',
+      fontSize: '14px',
+      boxSizing: 'border-box'
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <Link to="/" style={{ fontWeight: '800', color: '#6366f1', fontSize: '20px', textDecoration: 'none' }}>
+          Promo
+        </Link>
+        <div>© 2026 Promo. Усі права захищено. Платформа локальних знижок та акцій.</div>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          <Link to="/" style={{ color: '#64748b', textDecoration: 'none' }}>Про нас</Link>
+          <Link to="/merchant" style={{ color: '#64748b', textDecoration: 'none' }}>Для бізнесу</Link>
+          <a href="mailto:support@promohub.com" style={{ color: '#64748b', textDecoration: 'none' }}>Підтримка</a>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 // ==========================================
 // 8. ГОЛОВНИЙ КОМПОНЕНТ APP
 // ==========================================
@@ -1664,21 +1762,24 @@ export default function App() {
         toggleTheme={toggleTheme}
       />
 
-      <Routes>
-        <Route path="/" element={<MainPage user={currentUser} token={token} activeRegion={activeRegion} searchQuery={searchQuery} showToast={showToast} />} />
-        <Route path="/place/:id" element={<PlacePage />} />
-        <Route path="/login" element={<AuthPage onAuthSuccess={handleAuthSuccess} showToast={showToast} />} />
-        <Route
-          path="/merchant"
-          element={currentUser?.role === 'merchant' || currentUser?.role === 'admin' ? <MerchantCabinet user={currentUser} token={token} showToast={showToast} /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/admin"
-          element={currentUser?.role === 'admin' ? <AdminPanel token={token} showToast={showToast} /> : <Navigate to="/" />}
-        />
-        <Route path="/favorites" element={<FavoritesPage token={token} user={currentUser} showToast={showToast} />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage showToast={showToast} />} />
-      </Routes>
+      <main style={{ flex: 1, paddingBottom: '48px' }}>
+        <Routes>
+          <Route path="/" element={<MainPage user={currentUser} token={token} activeRegion={activeRegion} searchQuery={searchQuery} showToast={showToast} />} />
+          <Route path="/place/:id" element={<PlacePage token={token} user={currentUser} showToast={showToast} />} />
+          <Route path="/login" element={<AuthPage onAuthSuccess={handleAuthSuccess} showToast={showToast} />} />
+          <Route
+            path="/merchant"
+            element={currentUser?.role === 'merchant' || currentUser?.role === 'admin' ? <MerchantCabinet user={currentUser} token={token} showToast={showToast} /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/admin"
+            element={currentUser?.role === 'admin' ? <AdminPanel token={token} showToast={showToast} /> : <Navigate to="/" />}
+          />
+          <Route path="/favorites" element={<FavoritesPage token={token} user={currentUser} showToast={showToast} />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage showToast={showToast} />} />
+        </Routes>
+      </main>
+      <Footer />
 
       {/* 📍 МОДАЛЬНЕ ВІКНО ВИБОРУ МІСТА */}
       {showRegionModal && (

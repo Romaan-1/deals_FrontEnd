@@ -42,6 +42,9 @@ body {
   margin-top: 24px;
 }
 
+/* ==========================================
+   ✨ ПЛАВНА АНІМАЦІЯ КАРТОК АКЦІЙ ТА ЗАКЛАДІВ
+   ========================================== */
 .card {
   display: flex !important;
   flex-direction: column !important;
@@ -51,9 +54,90 @@ body {
   background-color: #ffffff !important;
   border-radius: 20px !important;
   padding: 20px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
   position: relative !important;
   border: 1px solid #f1f5f9 !important;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.25s ease !important;
+  will-change: transform;
+}
+
+.card:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 14px 28px -6px rgba(99, 102, 241, 0.14),
+    0 6px 12px -4px rgba(15, 23, 42, 0.06) !important;
+  border-color: #e0e7ff !important;
+}
+
+.card img {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card:hover img {
+  transform: scale(1.04);
+}
+
+.card button {
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card button:hover {
+  transform: translateY(-1px);
+}
+
+body.dark-mode .card {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .card:hover {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 14px 28px -6px rgba(0, 0, 0, 0.5) !important;
+}
+
+.categories-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px 2px;
+  margin-bottom: 28px;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE / Edge */
+}
+
+.categories-scroll::-webkit-scrollbar {
+  display: none;
+  /* Chrome / Safari / Opera */
+}
+
+.category-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.category-chip:hover {
+  transform: translateY(-2px);
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.1);
 }
 
 body.dark-mode .card {
@@ -242,6 +326,7 @@ body.dark-mode {
 /* 2. Шапка, картки, модальні вікна та блоки */
 body.dark-mode header,
 body.dark-mode .header,
+body.dark-mode footer,
 body.dark-mode .modal,
 body.dark-mode div[style*="background: #fff"],
 body.dark-mode div[style*="background: rgb(255, 255, 255)"],
