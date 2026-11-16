@@ -26,20 +26,6 @@ function PromoLogo({ size = 34, fontSize = '22px' }) {
         <circle cx="14.5" cy="14.5" r="1.6" fill="#4f46e5" />
         <circle cx="26.5" cy="9.5" r="2.5" fill="#fbbf24" />
       </svg>
-
-      <span
-        style={{
-          fontSize,
-          fontWeight: '800',
-          letterSpacing: '-0.5px',
-          background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          lineHeight: 1
-        }}
-      >
-        Promo
-      </span>
     </div>
   );
 }
@@ -47,90 +33,156 @@ function PromoLogo({ size = 34, fontSize = '22px' }) {
 // ==========================================
 // 1. ШАПКА САЙТУ (HEADER)
 // ==========================================
-function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onOpenRegionModal, theme, toggleTheme }) {
+function Header({
+  searchQuery,
+  setSearchQuery,
+  selectedRegionName,
+  selectedRegion,
+  activeRegion,
+  onOpenRegionModal,
+  setShowRegionModal,
+  theme,
+  darkMode,
+  toggleTheme,
+  setTheme,
+  user,
+  onLogout
+}) {
+  const location = useLocation();
   const navigate = useNavigate();
+  const [pressedBtn, setPressedBtn] = useState(null);
+
+  const triggerClickFeedback = (btnKey, action) => {
+    setPressedBtn(btnKey);
+    setTimeout(() => setPressedBtn(null), 220);
+    if (action) action();
+  };
+
+  const isActivePath = (path) => location.pathname === path;
+
+  // Універсальне визначення вибраного міста
+  const regionLabel =
+    selectedRegionName ||
+    (typeof selectedRegion === 'object' ? selectedRegion?.name : selectedRegion) ||
+    (typeof activeRegion === 'object' ? activeRegion?.name : activeRegion) ||
+    'Усі міста';
+
+  const handleOpenRegions = () => {
+    if (onOpenRegionModal) onOpenRegionModal();
+    else if (setShowRegionModal) setShowRegionModal(true);
+  };
+
+  // Універсальне визначення теми
+  const isDark = theme ? theme === 'dark' : Boolean(darkMode);
+  const handleToggleTheme = () => {
+    if (toggleTheme) toggleTheme();
+    else if (setTheme) setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   return (
-    <header className="header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-          <PromoLogo size={34} fontSize="22px" />
-        </Link>
+    <header className="header">
+      <div className="header-inner">
+        <div className="header-left">
+          <Link
+            to="/"
+            className="logo-link"
+            style={{
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              flexShrink: 0
+            }}
+          >
+            <PromoLogo />
+          </Link>
 
-        <div style={{ position: 'relative' }}>
           <input
             type="text"
-            placeholder="🔍 Пошук акцій, брендів, товарів..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ padding: '10px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', width: '280px', fontSize: '14px', outline: 'none' }}
+            className="header-search"
+            placeholder="Пошук акцій, брендів, товарів..."
+            value={searchQuery || ''}
+            onChange={(e) => setSearchQuery && setSearchQuery(e.target.value)}
           />
+
+          <button
+            type="button"
+            className={`nav-pill-btn ${regionLabel && regionLabel !== 'Усі міста' ? 'active' : ''
+              }`}
+            onClick={handleOpenRegions}
+          >
+            {regionLabel} ▾
+          </button>
         </div>
 
-        <button onClick={onOpenRegionModal} style={{ background: '#f1f5f9', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#334155' }}>
-          📍 {activeRegion ? activeRegion.name : 'Усі міста'} ▾
-        </button>
-      </div>
+        <div className="header-right">
+          <button
+            type="button"
+            className={`nav-pill-btn ${pressedBtn === 'theme' ? 'active' : ''}`}
+            onClick={() => triggerClickFeedback('theme', handleToggleTheme)}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button
-          onClick={toggleTheme}
-          style={{
-            background: theme === 'dark' ? '#334155' : '#f1f5f9',
-            color: theme === 'dark' ? '#f8fafc' : '#334155',
-            border: 'none',
-            padding: '8px 14px',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-          title="Змінити тему сайту"
-        >
-          {theme === 'dark' ? '☀️ Світла' : '🌙 Темна'}
-        </button>
+          {user ? (
+            <>
+              <Link
+                to="/favorites"
+                className={`nav-pill-btn ${isActivePath('/favorites') ? 'active' : ''}`}
+              >
+                Обране
+              </Link>
 
-        {user ? (
-          <>
-            <button
-              onClick={() => navigate('/favorites')}
-              style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              ❤️ Обране
-            </button>
+              {user.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className={`nav-pill-btn ${isActivePath('/admin') ? 'active' : ''}`}
+                >
+                  Admin
+                </Link>
+              )}
 
-            {user.role === 'admin' && (
-              <button onClick={() => navigate('/admin')} style={{ background: '#0f172a', color: '#f8fafc', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
-                🛡️ Admin
+              {(user.role === 'merchant' || user.role === 'admin') && (
+                <Link
+                  to="/merchant"
+                  className={`nav-pill-btn ${isActivePath('/merchant') ? 'active' : ''}`}
+                >
+                  Кабінет
+                </Link>
+              )}
+
+              <span className="nav-user-name">{user.full_name || user.email}</span>
+
+              <button
+                type="button"
+                className={`nav-pill-btn ${pressedBtn === 'logout' ? 'active' : ''}`}
+                onClick={() =>
+                  triggerClickFeedback('logout', () => {
+                    if (onLogout) onLogout();
+                    navigate('/');
+                  })
+                }
+              >
+                Вийти
               </button>
-            )}
-            {(user.role === 'merchant' || user.role === 'admin') && (
-              <button onClick={() => navigate('/merchant')} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
-                🏬 Кабінет
-              </button>
-            )}
-            <span style={{ fontSize: '14px', fontWeight: '600' }}>👤 {user.full_name}</span>
-            <button onClick={onLogout} style={{ padding: '8px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'transparent', cursor: 'pointer', fontWeight: '600' }}>Вийти</button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={() => navigate('/login', { state: { isRegister: false } })}
-              style={{ background: 'transparent', border: 'none', fontWeight: '600', cursor: 'pointer', marginRight: '4px' }}
-            >
-              Увійти
-            </button>
-            <button
-              onClick={() => navigate('/login', { state: { isRegister: true } })}
-              style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              Реєстрація
-            </button>
-          </>
-        )}
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className={`nav-pill-btn ${isActivePath('/login') ? 'active' : ''}`}
+              >
+                Увійти
+              </Link>
+              <Link
+                to="/register"
+                className={`nav-pill-btn ${isActivePath('/register') ? 'active' : ''}`}
+              >
+                Реєстрація
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -278,8 +330,12 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
             style={{ background: '#fff', padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
           >
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', overflow: 'hidden' }}>
-              {place.logo_url && place.logo_url.startsWith('http') ? (
-                <img src={place.logo_url} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {place.logo_url && (place.logo_url.startsWith('http') || place.logo_url.startsWith('/uploads')) ? (
+                <img
+                  src={place.logo_url.startsWith('/uploads') ? `http://localhost:5000${place.logo_url}` : place.logo_url}
+                  alt={place.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               ) : (
                 <span>{place.logo_url || '🥐'}</span>
               )}
@@ -347,8 +403,12 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
 
                 <div>
                   <div style={{ height: '110px', background: '#f8fafc', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '42px', marginBottom: '14px', position: 'relative', overflow: 'hidden' }}>
-                    {promo.image_url && promo.image_url.startsWith('http') ? (
-                      <img src={promo.image_url} alt={promo.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {promo.image_url && (promo.image_url.startsWith('http') || promo.image_url.startsWith('/uploads')) ? (
+                      <img
+                        src={promo.image_url.startsWith('/uploads') ? `http://localhost:5000${promo.image_url}` : promo.image_url}
+                        alt={promo.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
                     ) : (
                       <span>{promo.image_url || '☕🥐'}</span>
                     )}
@@ -402,7 +462,7 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
         </div>
       )}
 
-      {/* 🎁 МОДАЛЬНЕ ВІКНО КУПОНА */}
+      {/* */}
       {selectedPromoModal && (
         <div className="modal-overlay" onClick={() => setSelectedPromoModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', borderRadius: '24px', padding: '28px', textAlign: 'center' }}>
@@ -468,6 +528,7 @@ function PlacePage({ token, user, showToast }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const isImageUrl = (url) => typeof url === 'string' && (url.startsWith('http') || url.startsWith('/uploads'));
 
   // 🔄 Завантаження інформації про заклад та його відгуків
   const fetchPlaceDetails = () => {
@@ -537,16 +598,64 @@ function PlacePage({ token, user, showToast }) {
         ← На головну
       </button>
 
-      {/* Баннер та логотип закладу */}
-      <div style={{ position: 'relative', height: '200px', background: '#334155', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '32px', fontWeight: 'bold' }}>
-        {place.name.toUpperCase()}
-        <div style={{ position: 'absolute', bottom: '-24px', left: '32px', width: '80px', height: '80px', borderRadius: '20px', background: '#fff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', overflow: 'hidden' }}>
-          {place.logo_url && place.logo_url.startsWith('http') ? (
-            <img src={place.logo_url} alt={place.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <span>{place.logo_url || '🏬'}</span>
-          )}
-        </div>
+      {/* Верхній банер закладу (фото на фоні або темна плашка) */}
+      <div
+        style={{
+          height: '220px',
+          borderRadius: '24px',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          background: isImg
+            ? `linear-gradient(rgba(15, 23, 42, 0.5), rgba(15, 23, 42, 0.75)), url("${fullImgUrl}") center/cover no-repeat`
+            : '#334155'
+        }}
+      >
+        <h1
+          style={{
+            color: '#ffffff',
+            fontSize: '28px',
+            fontWeight: '800',
+            letterSpacing: '1px',
+            textAlign: 'center',
+            padding: '0 16px'
+          }}
+        >
+          {place.name.toUpperCase()}
+        </h1>
+      </div>
+
+      {/* Квадратний логотип зліва знизу */}
+      <div
+        style={{
+          width: '84px',
+          height: '84px',
+          borderRadius: '20px',
+          backgroundColor: 'var(--bg-surface)',
+          border: '3px solid var(--bg-page)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          fontSize: '36px',
+          marginTop: '-42px',
+          marginLeft: '28px',
+          position: 'relative',
+          zIndex: 2,
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)'
+        }}
+      >
+        {isImg ? (
+          <img
+            src={fullImgUrl}
+            alt={place.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          place.logo_url || '🏢'
+        )}
       </div>
 
       {/* Назва, рейтинг та адреса */}
@@ -968,415 +1077,792 @@ function AuthPage({ onAuthSuccess, showToast }) {
 // ==========================================
 // 5. КАБІНЕТ ЗАКЛАДУ (/merchant)
 // ==========================================
-function MerchantCabinet({ user, token, showToast }) {
-  const [activeTab, setActiveTab] = useState('my_promos');
-  const [allPromotions, setAllPromotions] = useState([]);
+function MerchantCabinet({ user: propUser, regions: propRegions, categories: propCategories }) {
+  const user = propUser || JSON.parse(localStorage.getItem('user') || 'null');
+
+  const [activeTab, setActiveTab] = useState('stats');
+  const [regions, setRegions] = useState(propRegions || []);
+  const [categories, setCategories] = useState(propCategories || []);
   const [myPlaces, setMyPlaces] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [regions, setRegions] = useState([]);
-
-  const [newPlaceName, setNewPlaceName] = useState('');
-  const [newPlaceAddress, setNewPlaceAddress] = useState('');
-  const [newPlaceCatId, setNewPlaceCatId] = useState('');
-  const [newPlaceRegionId, setNewPlaceRegionId] = useState('');
-
-  const [showAddPromoModal, setShowAddPromoModal] = useState(false);
-  const [selectedPlaceId, setSelectedPlaceId] = useState('');
-  const [promoTitle, setPromoTitle] = useState('');
-  const [promoDiscount, setPromoDiscount] = useState('-20%');
-
-  const [logoUrl, setLogoUrl] = useState('');
+  const [myPromotions, setMyPromotions] = useState([]);
+  const [allPromotions, setAllPromotions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [imageInputType, setImageInputType] = useState('url'); // 'url' або 'file'
-  const [promoLink, setPromoLink] = useState('');
 
-  const defaultCategories = [
-    { id: 1, name: "Кав'ярні та кафе", icon: '☕', slug: 'kavyarni-ta-kafe' },
-    { id: 2, name: "Ресторани та піца", icon: '🍕', slug: 'restorany-ta-pitza' },
-    { id: 3, name: "Шопінг та одяг", icon: '🛍️', slug: 'shopinh-ta-odyah' },
-    { id: 4, name: "Краса та догляд", icon: '💇', slug: 'krasa-ta-dohlyad' },
-    { id: 5, name: "Розваги", icon: '🍿', slug: 'rozvahy' },
-    { id: 6, name: "Авто та сервіс", icon: '🚗', slug: 'avto-ta-servis' }
-  ];
+  const [placeForm, setPlaceForm] = useState({
+    name: '',
+    address: '',
+    region_id: '',
+    category_id: '',
+    logo_url: ''
+  });
 
-  const availableCategories = categories.length > 0 ? categories : defaultCategories;
+  const [promoForm, setPromoForm] = useState({
+    place_id: '',
+    title: '',
+    description: '',
+    discount_value: '',
+    image_url: '',
+    link_url: ''
+  });
 
-  const fetchMyData = () => {
-    axios.get(`${API_URL}/places/my`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => {
-        setMyPlaces(res.data);
-        if (res.data.length > 0) setSelectedPlaceId(res.data[0].id);
-      }).catch(() => { });
+  const token = localStorage.getItem('token');
+  const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
-    axios.get(`${API_URL}/promotions`).then(res => setAllPromotions(res.data)).catch(() => { });
-    axios.get(`${API_URL}/categories`).then(res => setCategories(res.data)).catch(() => { });
-    axios.get(`${API_URL}/regions`).then(res => setRegions(res.data)).catch(() => { });
+  const fetchMerchantData = async () => {
+    try {
+      setLoading(true);
+      const [placesRes, promosRes, regionsRes, categoriesRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/places/my', authHeaders),
+        axios.get('http://localhost:5000/api/promotions'),
+        axios.get('http://localhost:5000/api/regions'),
+        axios.get('http://localhost:5000/api/categories')
+      ]);
+
+      const placesList = placesRes.data || [];
+      const promosList = promosRes.data || [];
+      const regionsList = regionsRes.data || [];
+      const categoriesList = categoriesRes.data || [];
+
+      setMyPlaces(placesList);
+      setAllPromotions(promosList);
+      setRegions(regionsList);
+      setCategories(categoriesList);
+
+      const myPlaceIds = new Set(placesList.map((p) => Number(p.id)));
+      setMyPromotions(promosList.filter((pr) => myPlaceIds.has(Number(pr.place_id))));
+
+      setPlaceForm((prev) => ({
+        ...prev,
+        region_id: prev.region_id || regionsList[0]?.id || '',
+        category_id: prev.category_id || categoriesList[0]?.id || ''
+      }));
+
+      if (placesList.length > 0) {
+        setPromoForm((prev) => ({ ...prev, place_id: prev.place_id || placesList[0].id }));
+      }
+    } catch (err) {
+      console.error('Помилка завантаження кабінету:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchMyData();
-  }, [token]);
+    fetchMerchantData();
+  }, []);
 
-  const myPlaceIds = myPlaces.map(p => p.id);
-  const myPromotions = allPromotions.filter(p => myPlaceIds.includes(p.place_id));
-  const otherPromotions = allPromotions.filter(p => !myPlaceIds.includes(p.place_id));
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
+  // Завантаження фото на сервер (/api/upload)
+  const handleFileUpload = async (file, targetField) => {
     if (!file) return;
-
     const formData = new FormData();
     formData.append('image', file);
-
-    setUploading(true);
-    axios.post(`${API_URL}/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-      .then(res => {
-        setLogoUrl(res.data.imageUrl);
-        setUploading(false);
-        showToast('Фото успішно завантажено!', 'success');
-      })
-      .catch(() => {
-        showToast('Помилка завантаження фото', 'error');
-        setUploading(false);
+    try {
+      setUploading(true);
+      const res = await axios.post('http://localhost:5000/api/upload', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
+      if (targetField === 'place') {
+        setPlaceForm((prev) => ({ ...prev, logo_url: res.data.url }));
+      } else {
+        setPromoForm((prev) => ({ ...prev, image_url: res.data.url }));
+      }
+    } catch (err) {
+      alert('Помилка завантаження зображення');
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleCreatePlace = (e) => {
+  // Створення закладу
+  const handleCreatePlace = async (e) => {
     e.preventDefault();
-    if (!newPlaceCatId || !newPlaceRegionId) {
-      showToast('Будь ласка, оберіть категорію та місто!', 'error');
+    try {
+      await axios.post(
+        'http://localhost:5000/api/places',
+        {
+          ...placeForm,
+          region_id: Number(placeForm.region_id || regions[0]?.id),
+          category_id: Number(placeForm.category_id || categories[0]?.id)
+        },
+        authHeaders
+      );
+      setPlaceForm({
+        name: '',
+        address: '',
+        region_id: regions[0]?.id || '',
+        category_id: categories[0]?.id || '',
+        logo_url: ''
+      });
+      await fetchMerchantData();
+      setActiveTab('places');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Помилка створення закладу');
+    }
+  };
+
+  // Створення акції
+  const handleCreatePromo = async (e) => {
+    e.preventDefault();
+    if (!promoForm.place_id) {
+      alert('Спочатку створіть заклад!');
       return;
     }
-
-    axios.post(`${API_URL}/places`, {
-      name: newPlaceName,
-      address: newPlaceAddress,
-      category_id: parseInt(newPlaceCatId, 10),
-      region_id: parseInt(newPlaceRegionId, 10),
-      logo_url: logoUrl
-    }, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => {
-        showToast('Заклад успішно створено!', 'success');
-        setNewPlaceName('');
-        setNewPlaceAddress('');
-        setLogoUrl('');
-        setActiveTab('my_promos');
-        fetchMyData();
-      })
-      .catch(err => showToast(err.response?.data?.error || 'Помилка створення закладу', 'error'));
-  };
-
-  const handleCreatePromo = (e) => {
-    e.preventDefault();
-    axios.post(`${API_URL}/promotions`, {
-      place_id: parseInt(selectedPlaceId, 10),
-      title: promoTitle,
-      discount_value: promoDiscount,
-      link_url: promoLink, // Передаємо посилання на акцію
-      start_date: new Date().toISOString(),
-      end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    }, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => {
-        showToast('Акцію створено!', 'success');
-        setShowAddPromoModal(false);
-        setPromoTitle('');
-        setPromoLink(''); // Очищаємо поле
-        fetchMyData();
-      })
-      .catch(err => showToast(err.response?.data?.error || 'Помилка розміщення акції', 'error'));
-  };
-
-  const handleDeletePromo = (id) => {
-    if (!window.confirm('Видалити цю акцію?')) return;
-    axios.delete(`${API_URL}/promotions/${id}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => {
-        showToast('Акцію видалено', 'success');
-        fetchMyData();
+    try {
+      await axios.post(
+        'http://localhost:5000/api/promotions',
+        {
+          ...promoForm,
+          place_id: Number(promoForm.place_id)
+        },
+        authHeaders
+      );
+      setPromoForm({
+        place_id: myPlaces[0]?.id || '',
+        title: '',
+        description: '',
+        discount_value: '',
+        image_url: '',
+        link_url: ''
       });
+      await fetchMerchantData();
+      setActiveTab('promos');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Помилка створення акції');
+    }
   };
+
+  // Видалення акції
+  const handleDeletePromo = async (promoId) => {
+    if (!window.confirm('Видалити цю акцію?')) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/promotions/${promoId}`, authHeaders);
+      fetchMerchantData();
+    } catch (err) {
+      alert('Не вдалося видалити акцію');
+    }
+  };
+
+  const verifiedCount = myPlaces.filter((p) => p.is_verified).length;
+  const pendingCount = myPlaces.length - verifiedCount;
+  const competitorPromosCount = Math.max(0, allPromotions.length - myPromotions.length);
+
+  const renderPreviewImg = (url, fallbackEmoji) => {
+    if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('/uploads'))) {
+      const src = url.startsWith('/uploads') ? `http://localhost:5000${url}` : url;
+      return (
+        <img
+          src={src}
+          alt="preview"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      );
+    }
+    return <span>{url || fallbackEmoji}</span>;
+  };
+
+  const menuItems = [
+    { key: 'stats', label: 'Статистика' },
+    { key: 'places', label: `Мої заклади (${myPlaces.length})` },
+    { key: 'add-place', label: '+ Додати заклад' },
+    { key: 'promos', label: `Мої акції (${myPromotions.length})` },
+    { key: 'add-promo', label: '+ Додати акцію' }
+  ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '24px' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}><span style={{ color: '#6366f1' }}>Promo</span> | Кабінет закладу</h2>
-          <div style={{ fontWeight: '600', color: '#475569' }}>👤 {user?.full_name}</div>
+    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '28px 24px 60px' }}>
+      {/* Верхній рядок панелі (як у Admin Panel) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '28px'
+        }}
+      >
+        <div style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.3px' }}>
+          <span>Merchant Panel</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' }}>
-          <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', height: 'fit-content', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <div
-              onClick={() => setActiveTab('my_promos')}
-              style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'my_promos' ? '#f1f5f9' : 'transparent', fontWeight: '600', color: activeTab === 'my_promos' ? '#6366f1' : '#475569', cursor: 'pointer', marginBottom: '6px' }}
-            >
-              🔥 Мої акції ({myPromotions.length})
-            </div>
-            <div
-              onClick={() => setActiveTab('other_promos')}
-              style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'other_promos' ? '#f1f5f9' : 'transparent', fontWeight: '600', color: activeTab === 'other_promos' ? '#6366f1' : '#475569', cursor: 'pointer', marginBottom: '6px' }}
-            >
-              📊 Акції конкурентів ({otherPromotions.length})
-            </div>
-            <div
-              onClick={() => setActiveTab('add_place')}
-              style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'add_place' ? '#f1f5f9' : 'transparent', fontWeight: '600', color: activeTab === 'add_place' ? '#6366f1' : '#475569', cursor: 'pointer' }}
-            >
-              🏬 Додати новий заклад
-            </div>
-          </div>
-
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
-              <div style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ color: '#64748b', fontSize: '13px' }}>Моїх закладів</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold' }}>{myPlaces.length}</div>
-              </div>
-              <div style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ color: '#64748b', fontSize: '13px' }}>Активних акцій бізнесу</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#10b981' }}>{myPromotions.length}</div>
-              </div>
-              <div style={{ background: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ color: '#64748b', fontSize: '13px' }}>Загалом у місті</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#8b5cf6' }}>{allPromotions.length} 🏷️</div>
-              </div>
-            </div>
-
-            {activeTab === 'my_promos' && (
-              <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: 'bold' }}>Акції моїх закладів</h3>
-                  {myPlaces.length > 0 ? (
-                    <button onClick={() => setShowAddPromoModal(true)} style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
-                      + Додати нову акцію
-                    </button>
-                  ) : (
-                    <p style={{ color: '#ef4444', fontSize: '13px', margin: 0 }}>Спочатку додайте ваш заклад у вкладці меню!</p>
-                  )}
-                </div>
-
-                {myPromotions.length === 0 ? (
-                  <p style={{ color: '#64748b' }}>У вас поки немає опублікованих акцій.</p>
-                ) : (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                        <th style={{ padding: '12px' }}>Заголовок</th>
-                        <th style={{ padding: '12px' }}>Заклад</th>
-                        <th style={{ padding: '12px' }}>Знижка</th>
-                        <th style={{ padding: '12px' }}>Дії</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {myPromotions.map(p => (
-                        <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '16px 12px', fontWeight: '600' }}>{p.title}</td>
-                          <td style={{ padding: '16px 12px', color: '#64748b' }}>{p.place_name}</td>
-                          <td style={{ padding: '16px 12px', color: '#ef4444', fontWeight: 'bold' }}>{p.discount_value}</td>
-                          <td style={{ padding: '16px 12px' }}>
-                            <button onClick={() => handleDeletePromo(p.id)} style={{ background: '#fef2f2', color: '#ef4444', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>🗑️ Видалити</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'other_promos' && (
-              <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Аналітика акцій інших закладів на ринку</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                      <th style={{ padding: '12px' }}>Назва акції</th>
-                      <th style={{ padding: '12px' }}>Заклад</th>
-                      <th style={{ padding: '12px' }}>Розмір знижки</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {otherPromotions.map(p => (
-                      <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '14px 12px', fontWeight: '600' }}>{p.title}</td>
-                        <td style={{ padding: '14px 12px', color: '#6366f1', fontWeight: '500' }}>🏬 {p.place_name}</td>
-                        <td style={{ padding: '14px 12px', color: '#ef4444', fontWeight: 'bold' }}>{p.discount_value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {activeTab === 'add_place' && (
-              <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Реєстрація нового закладу</h3>
-
-                <form onSubmit={handleCreatePlace} style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '450px' }}>
-                  <input
-                    className="input-field"
-                    placeholder="Назва закладу..."
-                    value={newPlaceName}
-                    onChange={e => setNewPlaceName(e.target.value)}
-                    required
-                  />
-                  <input
-                    className="input-field"
-                    placeholder="Адреса..."
-                    value={newPlaceAddress}
-                    onChange={e => setNewPlaceAddress(e.target.value)}
-                    required
-                  />
-
-                  {/* 🖼️ БЛОК ВИБОРУ ФОТО: URL АБО ЗАВАНТАЖЕННЯ ФАЙЛУ */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#f8fafc', padding: '14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Логотип / Фото закладу:</label>
-
-                    {/* Перемикач режимів */}
-                    <div style={{ display: 'flex', gap: '6px', background: '#e2e8f0', padding: '3px', borderRadius: '10px' }}>
-                      <button
-                        type="button"
-                        onClick={() => setImageInputType('url')}
-                        style={{
-                          flex: 1,
-                          padding: '6px 10px',
-                          border: 'none',
-                          borderRadius: '8px',
-                          background: imageInputType === 'url' ? '#fff' : 'transparent',
-                          fontWeight: 'bold',
-                          fontSize: '12px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        🔗 Посилання з інтернету
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setImageInputType('file')}
-                        style={{
-                          flex: 1,
-                          padding: '6px 10px',
-                          border: 'none',
-                          borderRadius: '8px',
-                          background: imageInputType === 'file' ? '#fff' : 'transparent',
-                          fontWeight: 'bold',
-                          fontSize: '12px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        📁 Завантажити файл
-                      </button>
-                    </div>
-
-                    {/* Режим 1: Вставка URL з інтернету */}
-                    {imageInputType === 'url' ? (
-                      <input
-                        type="url"
-                        className="input-field"
-                        placeholder="https://example.com/photo.jpg"
-                        value={logoUrl}
-                        onChange={e => setLogoUrl(e.target.value)}
-                        style={{ marginBottom: 0 }}
-                      />
-                    ) : (
-                      /* Режим 2: Завантаження файлу з ПК */
-                      <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileUpload}
-                          style={{ fontSize: '13px' }}
-                        />
-                        {uploading && <span style={{ fontSize: '12px', color: '#6366f1', display: 'block', marginTop: '4px', fontWeight: 'bold' }}>⏳ Завантаження фото...</span>}
-                      </div>
-                    )}
-
-                    {/* Live Preview для обох варіантів */}
-                    {logoUrl && (
-                      <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
-                        <img
-                          src={logoUrl}
-                          alt="Preview"
-                          style={{ width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover' }}
-                          onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/50?text=Error'; }}
-                        />
-                        <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 'bold' }}>✅ Зображення підтягнуто!</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <select
-                    className="input-field"
-                    value={newPlaceCatId}
-                    onChange={e => setNewPlaceCatId(e.target.value)}
-                    required
-                  >
-                    <option value="">Оберіть категорію...</option>
-                    {availableCategories.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.icon || '🏷️'} {c.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select className="input-field" value={newPlaceRegionId} onChange={e => setNewPlaceRegionId(e.target.value)} required>
-                    <option value="">Оберіть місто...</option>
-                    {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                  </select>
-
-                  <button type="submit" style={{ background: '#10b981', color: '#fff', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    + Зберегти новий заклад
-                  </button>
-                </form>
-              </div>
-            )}
-          </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            color: 'var(--text-secondary)'
+          }}
+        >
+          <span>{user?.full_name || 'Merchant'}</span>
+          <span>🏢</span>
         </div>
       </div>
 
-      {showAddPromoModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Опублікувати акцію</h3>
-            <form onSubmit={handleCreatePromo}>
-              <select className="input-field" value={selectedPlaceId} onChange={e => setSelectedPlaceId(e.target.value)} required>
-                {myPlaces.map(p => <option key={p.id} value={p.id}>{p.name} ({p.address})</option>)}
-              </select>
-
-              <input
-                className="input-field"
-                placeholder="Заголовок (наприклад -30% на велику піцу)"
-                value={promoTitle}
-                onChange={e => setPromoTitle(e.target.value)}
-                required
-              />
-
-              <input
-                className="input-field"
-                placeholder="Розмір знижки (наприклад -30% або 1+1)"
-                value={promoDiscount}
-                onChange={e => setPromoDiscount(e.target.value)}
-                required
-              />
-
-              {/* ПОЛЕ ВВОДУ ПОСИЛАННЯ НА НА АКЦІЮ / САЙТ */}
-              <input
-                type="url"
-                className="input-field"
-                placeholder="Посилання на сайт/акцію (напр. https://site.com/promo)"
-                value={promoLink}
-                onChange={e => setPromoLink(e.target.value)}
-              />
-
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowAddPromoModal(false)}>Скасувати</button>
-                <button type="submit" className="button" style={{ width: 'auto' }}>Опублікувати</button>
-              </div>
-            </form>
-          </div>
+      {/* Основна двоколонкова сітка: зліва меню, справа робоча область */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '250px 1fr',
+          gap: '24px',
+          alignItems: 'start'
+        }}
+      >
+        {/* ЛІВА ПАНЕЛЬ НАВІГАЦІЇ */}
+        <div
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '20px',
+            padding: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}
+        >
+          {menuItems.map((item) => {
+            const isActive = activeTab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActiveTab(item.key)}
+                style={{
+                  textAlign: 'left',
+                  padding: '13px 16px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: isActive ? '700' : '600',
+                  backgroundColor: isActive ? 'rgba(148, 163, 184, 0.16)' : 'transparent',
+                  color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  transition: 'background-color 0.2s ease, color 0.2s ease'
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </div>
-      )}
+
+        {/* ПРАВА ПАНЕЛЬ КОНТЕНТУ */}
+        <div
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '24px',
+            padding: '28px'
+          }}
+        >
+          {loading ? (
+            <p style={{ color: 'var(--text-muted)' }}>Завантаження даних кабінету...</p>
+          ) : (
+            <>
+              {/* ВКЛАДКА 1: СТАТИСТИКА (3 KPI-картки як на скріншоті Admin Panel) */}
+              {activeTab === 'stats' && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '22px' }}>
+                    Загальна статистика бізнесу
+                  </h2>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+                      gap: '18px'
+                    }}
+                  >
+                    {/* Картка 1: Мої заклади */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--bg-page)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '18px',
+                        padding: '22px'
+                      }}
+                    >
+                      <div style={{ fontSize: '26px', marginBottom: '12px' }}>🏢</div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: 'var(--text-muted)',
+                          marginBottom: '6px'
+                        }}
+                      >
+                        Мої заклади
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '32px',
+                          fontWeight: '800',
+                          color: '#0ea5e9',
+                          marginBottom: '14px'
+                        }}
+                      >
+                        {myPlaces.length}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '14px',
+                          fontSize: '12px',
+                          color: 'var(--text-muted)'
+                        }}
+                      >
+                        <span>
+                          Підтверджені: <strong style={{ color: '#10b981' }}>{verifiedCount}</strong>
+                        </span>
+                        <span>
+                          Очікують: <strong style={{ color: '#f59e0b' }}>{pendingCount}</strong>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Картка 2: Мої акції */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--bg-page)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '18px',
+                        padding: '22px'
+                      }}
+                    >
+                      <div style={{ fontSize: '26px', marginBottom: '12px' }}>🎁</div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: 'var(--text-muted)',
+                          marginBottom: '6px'
+                        }}
+                      >
+                        Мої активні акції
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '32px',
+                          fontWeight: '800',
+                          color: '#f43f5e',
+                          marginBottom: '14px'
+                        }}
+                      >
+                        {myPromotions.length}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        Опубліковано в каталозі:{' '}
+                        <strong style={{ color: '#10b981' }}>{myPromotions.length}</strong>
+                      </div>
+                    </div>
+
+                    {/* Картка 3: Конкуренти на платформі */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--bg-page)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '18px',
+                        padding: '22px'
+                      }}
+                    >
+                      <div style={{ fontSize: '26px', marginBottom: '12px' }}>📊</div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: 'var(--text-muted)',
+                          marginBottom: '6px'
+                        }}
+                      >
+                        Ринок та конкуренти
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '32px',
+                          fontWeight: '800',
+                          color: '#8b5cf6',
+                          marginBottom: '14px'
+                        }}
+                      >
+                        {allPromotions.length}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '3px',
+                          fontSize: '12px',
+                          color: 'var(--text-muted)'
+                        }}
+                      >
+                        <span>
+                          Акції інших закладів:{' '}
+                          <strong style={{ color: 'var(--text-primary)' }}>
+                            {competitorPromosCount}
+                          </strong>
+                        </span>
+                        <span>
+                          Ваша частка:{' '}
+                          <strong style={{ color: '#6366f1' }}>
+                            {allPromotions.length > 0
+                              ? Math.round((myPromotions.length / allPromotions.length) * 100)
+                              : 0}
+                            %
+                          </strong>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ВКЛАДКА 2: МОЇ ЗАКЛАДИ */}
+              {activeTab === 'places' && (
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '20px'
+                    }}
+                  >
+                    <h2 style={{ fontSize: '20px', fontWeight: '800' }}>
+                      Мої заклади ({myPlaces.length})
+                    </h2>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => setActiveTab('add-place')}
+                    >
+                      + Новий заклад
+                    </button>
+                  </div>
+
+                  {myPlaces.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)' }}>
+                      У вас ще немає створених закладів. Натисніть «+ Додати заклад».
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {myPlaces.map((pl) => (
+                        <div
+                          key={pl.id}
+                          style={{
+                            backgroundColor: 'var(--bg-page)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            padding: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '16px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div
+                              style={{
+                                width: '52px',
+                                height: '52px',
+                                borderRadius: '14px',
+                                backgroundColor: 'var(--bg-surface)',
+                                border: '1px solid var(--border-color)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '24px',
+                                overflow: 'hidden'
+                              }}
+                            >
+                              {renderPreviewImg(pl.logo_url, '🏢')}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: '700', fontSize: '16px' }}>{pl.name}</div>
+                              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                                📍 {pl.address} • ⭐ {Number(pl.rating || 4.5).toFixed(1)}
+                              </div>
+                            </div>
+                          </div>
+
+                          <span
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '999px',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              backgroundColor: pl.is_verified
+                                ? 'rgba(16, 185, 129, 0.15)'
+                                : 'rgba(245, 158, 11, 0.15)',
+                              color: pl.is_verified ? '#10b981' : '#f59e0b'
+                            }}
+                          >
+                            {pl.is_verified ? 'Підтверджено' : 'Очікує модерації'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ВКЛАДКА 3: ДОДАТИ ЗАКЛАД */}
+              {activeTab === 'add-place' && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px' }}>
+                    Реєстрація нового закладу
+                  </h2>
+
+                  <form
+                    onSubmit={handleCreatePlace}
+                    style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px' }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Назва закладу (наприклад, Львівські Круасани)"
+                      value={placeForm.name}
+                      onChange={(e) => setPlaceForm({ ...placeForm, name: e.target.value })}
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Адреса (наприклад, вул. Грушевського, 12)"
+                      value={placeForm.address}
+                      onChange={(e) => setPlaceForm({ ...placeForm, address: e.target.value })}
+                      required
+                    />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <select
+                        value={placeForm.region_id}
+                        onChange={(e) => setPlaceForm({ ...placeForm, region_id: e.target.value })}
+                        required
+                      >
+                        <option value="">Оберіть місто</option>
+                        {regions.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={placeForm.category_id}
+                        onChange={(e) => setPlaceForm({ ...placeForm, category_id: e.target.value })}
+                        required
+                      >
+                        <option value="">Оберіть категорію</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="URL фото/логотипу або завантажте файл нижче"
+                      value={placeForm.logo_url}
+                      onChange={(e) => setPlaceForm({ ...placeForm, logo_url: e.target.value })}
+                    />
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e.target.files[0], 'place')}
+                      />
+                      {uploading && <span style={{ fontSize: '13px' }}>Завантаження...</span>}
+                    </div>
+
+                    <button type="submit" className="btn btn-primary" style={{ marginTop: '6px' }}>
+                      Створити заклад
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* ВКЛАДКА 4: МОЇ АКЦІЇ */}
+              {activeTab === 'promos' && (
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '20px'
+                    }}
+                  >
+                    <h2 style={{ fontSize: '20px', fontWeight: '800' }}>
+                      Мої акції та знижки ({myPromotions.length})
+                    </h2>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => setActiveTab('add-promo')}
+                    >
+                      + Нова акція
+                    </button>
+                  </div>
+
+                  {myPromotions.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)' }}>
+                      У ваших закладів ще немає активних акцій.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {myPromotions.map((pr) => (
+                        <div
+                          key={pr.id}
+                          style={{
+                            backgroundColor: 'var(--bg-page)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            padding: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '16px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <div
+                              style={{
+                                width: '56px',
+                                height: '56px',
+                                borderRadius: '14px',
+                                backgroundColor: 'var(--bg-surface)',
+                                border: '1px solid var(--border-color)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '24px',
+                                overflow: 'hidden'
+                              }}
+                            >
+                              {renderPreviewImg(pr.image_url, '🎁')}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: '700', fontSize: '15px' }}>
+                                {pr.title}{' '}
+                                <span
+                                  style={{
+                                    backgroundColor: '#ef4444',
+                                    color: '#fff',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    marginLeft: '6px'
+                                  }}
+                                >
+                                  {pr.discount_value}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                                🏢 {pr.place_name}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="btn btn-danger"
+                            onClick={() => handleDeletePromo(pr.id)}
+                          >
+                            Видалити
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ВКЛАДКА 5: ДОДАТИ АКЦІЮ */}
+              {activeTab === 'add-promo' && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px' }}>
+                    Публікація нової акції
+                  </h2>
+
+                  <form
+                    onSubmit={handleCreatePromo}
+                    style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px' }}
+                  >
+                    <select
+                      value={promoForm.place_id}
+                      onChange={(e) => setPromoForm({ ...promoForm, place_id: e.target.value })}
+                      required
+                    >
+                      <option value="">Оберіть ваш заклад</option>
+                      {myPlaces.map((pl) => (
+                        <option key={pl.id} value={pl.id}>
+                          {pl.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <input
+                      type="text"
+                      placeholder="Заголовок акції (наприклад, Знижка -30% на каву)"
+                      value={promoForm.title}
+                      onChange={(e) => setPromoForm({ ...promoForm, title: e.target.value })}
+                      required
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Розмір знижки (наприклад, -30% або 1+1=3)"
+                      value={promoForm.discount_value}
+                      onChange={(e) =>
+                        setPromoForm({ ...promoForm, discount_value: e.target.value })
+                      }
+                      required
+                    />
+
+                    <textarea
+                      rows="3"
+                      placeholder="Опис умов акції..."
+                      value={promoForm.description}
+                      onChange={(e) => setPromoForm({ ...promoForm, description: e.target.value })}
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Посилання на сайт або промокод (необов'язково)"
+                      value={promoForm.link_url}
+                      onChange={(e) => setPromoForm({ ...promoForm, link_url: e.target.value })}
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="URL фото акції або завантажте файл нижче"
+                      value={promoForm.image_url}
+                      onChange={(e) => setPromoForm({ ...promoForm, image_url: e.target.value })}
+                    />
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e.target.files[0], 'promo')}
+                      />
+                      {uploading && <span style={{ fontSize: '13px' }}>Завантаження...</span>}
+                    </div>
+
+                    <button type="submit" className="btn btn-primary" style={{ marginTop: '6px' }}>
+                      Опублікувати акцію
+                    </button>
+                  </form>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1492,253 +1978,516 @@ function FavoritesPage({ token, user, showToast }) {
 // ==========================================
 // 7. АДМІН-ПАНЕЛЬ (/admin)
 // ==========================================
-function AdminPanel({ token, showToast }) {
+function AdminPanel({ user: propUser }) {
+  const user = propUser || JSON.parse(localStorage.getItem('user') || 'null');
+
   const [activeTab, setActiveTab] = useState('stats');
-  const [stats, setStats] = useState(null);
-  const [pendingPlaces, setPendingPlaces] = useState([]);
+  const [stats, setStats] = useState({});
   const [users, setUsers] = useState([]);
+  const [pendingPlaces, setPendingPlaces] = useState([]);
   const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const loadData = () => {
-    // Завантаження статистики
-    axios.get(`${API_URL}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => setStats(res.data))
-      .catch(() => { });
+  const token = localStorage.getItem('token');
+  const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
-    // Запити закладів
-    axios.get(`${API_URL}/admin/places/pending`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => setPendingPlaces(res.data))
-      .catch(() => { });
+  const fetchAdminData = async () => {
+    try {
+      setLoading(true);
+      const [statsRes, usersRes, pendingRes, promosRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/admin/stats', authHeaders),
+        axios.get('http://localhost:5000/api/admin/users', authHeaders),
+        axios.get('http://localhost:5000/api/admin/places/pending', authHeaders),
+        axios.get('http://localhost:5000/api/promotions')
+      ]);
 
-    // Користувачі
-    axios.get(`${API_URL}/admin/users`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => setUsers(res.data))
-      .catch(() => { });
-
-    // Акції
-    axios.get(`${API_URL}/promotions`)
-      .then(res => setPromotions(res.data))
-      .catch(() => { });
+      setStats(statsRes.data || {});
+      setUsers(usersRes.data || []);
+      setPendingPlaces(pendingRes.data || []);
+      setPromotions(promosRes.data || []);
+    } catch (err) {
+      console.error('Помилка завантаження адмін-панелі:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadData();
-  }, [token]);
+    fetchAdminData();
+  }, []);
 
-  const handleApprovePlace = (id, isApproved) => {
-    axios.put(`${API_URL}/admin/places/${id}/approve`, { is_verified: isApproved }, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => {
-        showToast(isApproved ? 'Заклад підтверджено!' : 'Запит відхилено', 'success');
-        loadData();
-      });
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await axios.put(
+        `http://localhost:5000/api/admin/users/${userId}/role`,
+        { role: newRole },
+        authHeaders
+      );
+      fetchAdminData();
+    } catch (err) {
+      alert('Помилка зміни ролі користувача');
+    }
   };
 
-  const handleChangeRole = (userId, newRole) => {
-    axios.put(`${API_URL}/admin/users/${userId}/role`, { role: newRole }, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => {
-        showToast('Роль змінено!', 'success');
-        loadData();
-      });
+  const handleApprovePlace = async (placeId, isVerified) => {
+    try {
+      await axios.put(
+        `http://localhost:5000/api/admin/places/${placeId}/approve`,
+        { is_verified: isVerified },
+        authHeaders
+      );
+      fetchAdminData();
+    } catch (err) {
+      alert('Помилка оновлення статусу закладу');
+    }
   };
 
-  const handleDeletePromo = (promoId) => {
-    if (!window.confirm('Видалити цю акцію як адміністратор?')) return;
-    axios.delete(`${API_URL}/promotions/${promoId}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(() => {
-        showToast('Акцію видалено!', 'success');
-        loadData();
-      })
-      .catch(err => {
-        showToast(err.response?.data?.error || 'Помилка видалення акції', 'error');
-      });
+  const handleDeletePromo = async (promoId) => {
+    if (!window.confirm('Видалити цю акцію з платформи?')) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/promotions/${promoId}`, authHeaders);
+      fetchAdminData();
+    } catch (err) {
+      alert('Помилка видалення акції');
+    }
   };
+
+  const clientsCount = users.filter((u) => u.role === 'user').length;
+  const merchantsCount = users.filter((u) => u.role === 'merchant').length;
+  const adminsCount = users.filter((u) => u.role === 'admin').length;
+
+  const totalPlaces = Number(stats.total_places ?? stats.places_count ?? 0);
+  const verifiedPlaces = Number(
+    stats.verified_places ?? Math.max(0, totalPlaces - pendingPlaces.length)
+  );
+  const totalPromos = Number(stats.total_promotions ?? promotions.length);
+
+  const menuItems = [
+    { key: 'stats', label: 'Статистика' },
+    { key: 'places', label: `Запити закладів (${pendingPlaces.length})` },
+    { key: 'users', label: `Користувачі (${users.length})` },
+    { key: 'promos', label: `Модерація акцій (${promotions.length})` }
+  ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0f172a', color: '#f8fafc', padding: '24px' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: 'bold' }}>
-            <span style={{ color: '#818cf8' }}>Promo</span> | Admin Panel
-          </h2>
-          <span style={{ fontWeight: 'bold', color: '#94a3b8' }}>SuperAdmin 🛡️</span>
+    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '28px 24px 60px' }}>
+      {/* Верхній рядок панелі (ідентичний Merchant Panel) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '28px'
+        }}
+      >
+        <div style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.3px' }}>
+          <span style={{ color: '#6366f1' }}>Promo</span>{' '}
+          <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>|</span>{' '}
+          <span>Admin Panel</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '24px' }}>
-          {/* Бічна навігація */}
-          <div style={{ background: '#1e293b', borderRadius: '16px', padding: '16px', height: 'fit-content' }}>
-            <div
-              onClick={() => setActiveTab('stats')}
-              style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'stats' ? '#334155' : 'transparent', fontWeight: '600', color: '#fff', cursor: 'pointer', marginBottom: '6px' }}
-            >
-              Статистика
-            </div>
-            <div
-              onClick={() => setActiveTab('places')}
-              style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'places' ? '#334155' : 'transparent', fontWeight: '600', color: '#fff', cursor: 'pointer', marginBottom: '6px' }}
-            >
-              Запити закладів ({pendingPlaces.length})
-            </div>
-            <div
-              onClick={() => setActiveTab('users')}
-              style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'users' ? '#334155' : 'transparent', fontWeight: '600', color: '#fff', cursor: 'pointer', marginBottom: '6px' }}
-            >
-              Користувачі ({users.length})
-            </div>
-            <div
-              onClick={() => setActiveTab('promos')}
-              style={{ padding: '12px', borderRadius: '10px', background: activeTab === 'promos' ? '#334155' : 'transparent', fontWeight: '600', color: '#fff', cursor: 'pointer' }}
-            >
-              Модерація акцій ({promotions.length})
-            </div>
-          </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            color: 'var(--text-secondary)'
+          }}
+        >
+          <span>{user?.full_name || 'Super Admin'}</span>
+          <span>🛡️</span>
+        </div>
+      </div>
 
-          {/* Основний вміст */}
-          <div style={{ background: '#1e293b', borderRadius: '16px', padding: '24px' }}>
-            {/* ВКЛАДКА: СТАТИСТИКА */}
-            {activeTab === 'stats' && (
-              <>
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Загальна статистика платформи</h3>
-                {stats ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      {/* Основна двоколонкова сітка */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '250px 1fr',
+          gap: '24px',
+          alignItems: 'start'
+        }}
+      >
+        {/* ЛІВА ПАНЕЛЬ НАВІГАЦІЇ */}
+        <div
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '20px',
+            padding: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}
+        >
+          {menuItems.map((item) => {
+            const isActive = activeTab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActiveTab(item.key)}
+                style={{
+                  textAlign: 'left',
+                  padding: '13px 16px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: isActive ? '700' : '600',
+                  backgroundColor: isActive ? 'rgba(148, 163, 184, 0.16)' : 'transparent',
+                  color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  transition: 'background-color 0.2s ease, color 0.2s ease'
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
 
-                    {/* Картка закладів */}
-                    <div style={{ background: '#0f172a', padding: '20px', borderRadius: '14px', border: '1px solid #334155' }}>
-                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>🏢</div>
-                      <h4 style={{ fontSize: '14px', color: '#94a3b8', margin: 0 }}>Всього закладів</h4>
-                      <p style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 12px 0', color: '#38bdf8' }}>{stats.places.total}</p>
-                      <div style={{ fontSize: '12px', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Підтверджені: <strong style={{ color: '#34d399' }}>{stats.places.verified}</strong></span>
-                        <span>Очікують: <strong style={{ color: '#fbbf24' }}>{stats.places.pending}</strong></span>
+        {/* ПРАВА ПАНЕЛЬ КОНТЕНТУ */}
+        <div
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '24px',
+            padding: '28px'
+          }}
+        >
+          {loading ? (
+            <p style={{ color: 'var(--text-muted)' }}>Завантаження даних панелі...</p>
+          ) : (
+            <>
+              {/* ВКЛАДКА 1: СТАТИСТИКА */}
+              {activeTab === 'stats' && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '22px' }}>
+                    Загальна статистика платформи
+                  </h2>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+                      gap: '18px'
+                    }}
+                  >
+                    {/* Картка 1: Заклади */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--bg-page)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '18px',
+                        padding: '22px'
+                      }}
+                    >
+                      <div style={{ fontSize: '26px', marginBottom: '12px' }}>🏢</div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: 'var(--text-muted)',
+                          marginBottom: '6px'
+                        }}
+                      >
+                        Всього закладів
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '32px',
+                          fontWeight: '800',
+                          color: '#0ea5e9',
+                          marginBottom: '14px'
+                        }}
+                      >
+                        {totalPlaces}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '14px',
+                          fontSize: '12px',
+                          color: 'var(--text-muted)'
+                        }}
+                      >
+                        <span>
+                          Підтверджені: <strong style={{ color: '#10b981' }}>{verifiedPlaces}</strong>
+                        </span>
+                        <span>
+                          Очікують:{' '}
+                          <strong style={{ color: '#f59e0b' }}>{pendingPlaces.length}</strong>
+                        </span>
                       </div>
                     </div>
 
-                    {/* Картка акцій */}
-                    <div style={{ background: '#0f172a', padding: '20px', borderRadius: '14px', border: '1px solid #334155' }}>
-                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>🎁</div>
-                      <h4 style={{ fontSize: '14px', color: '#94a3b8', margin: 0 }}>Всього акцій</h4>
-                      <p style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 12px 0', color: '#f43f5e' }}>{stats.promotions.total}</p>
-                      <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
-                        <span>Активних зараз: <strong style={{ color: '#34d399' }}>{stats.promotions.active}</strong></span>
+                    {/* Картка 2: Акції */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--bg-page)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '18px',
+                        padding: '22px'
+                      }}
+                    >
+                      <div style={{ fontSize: '26px', marginBottom: '12px' }}>🎁</div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: 'var(--text-muted)',
+                          marginBottom: '6px'
+                        }}
+                      >
+                        Всього акцій
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '32px',
+                          fontWeight: '800',
+                          color: '#f43f5e',
+                          marginBottom: '14px'
+                        }}
+                      >
+                        {totalPromos}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        Активних зараз:{' '}
+                        <strong style={{ color: '#10b981' }}>{promotions.length}</strong>
                       </div>
                     </div>
 
-                    {/* Картка користувачів */}
-                    <div style={{ background: '#0f172a', padding: '20px', borderRadius: '14px', border: '1px solid #334155' }}>
-                      <div style={{ fontSize: '28px', marginBottom: '8px' }}>👥</div>
-                      <h4 style={{ fontSize: '14px', color: '#94a3b8', margin: 0 }}>Користувачі</h4>
-                      <p style={{ fontSize: '26px', fontWeight: 'bold', margin: '4px 0 12px 0', color: '#a855f7' }}>{stats.users.total}</p>
-                      <div style={{ fontSize: '12px', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span>Клієнти: <strong>{stats.users.users_count}</strong></span>
-                        <span>Продавці (Merchant): <strong style={{ color: '#818cf8' }}>{stats.users.merchants_count}</strong></span>
-                        <span>Адміни: <strong style={{ color: '#f43f5e' }}>{stats.users.admins_count}</strong></span>
+                    {/* Картка 3: Користувачі */}
+                    <div
+                      style={{
+                        backgroundColor: 'var(--bg-page)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '18px',
+                        padding: '22px'
+                      }}
+                    >
+                      <div style={{ fontSize: '26px', marginBottom: '12px' }}>👥</div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: 'var(--text-muted)',
+                          marginBottom: '6px'
+                        }}
+                      >
+                        Користувачі
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '32px',
+                          fontWeight: '800',
+                          color: '#8b5cf6',
+                          marginBottom: '14px'
+                        }}
+                      >
+                        {users.length}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '3px',
+                          fontSize: '12px',
+                          color: 'var(--text-muted)'
+                        }}
+                      >
+                        <span>
+                          Клієнти:{' '}
+                          <strong style={{ color: 'var(--text-primary)' }}>{clientsCount}</strong>
+                        </span>
+                        <span>
+                          Продавці (Merchant):{' '}
+                          <strong style={{ color: '#6366f1' }}>{merchantsCount}</strong>
+                        </span>
+                        <span>
+                          Адміни: <strong style={{ color: '#f43f5e' }}>{adminsCount}</strong>
+                        </span>
                       </div>
                     </div>
-
                   </div>
-                ) : (
-                  <p style={{ color: '#94a3b8' }}>Завантаження статистики...</p>
-                )}
-              </>
-            )}
+                </div>
+              )}
 
-            {/* ВКЛАДКА: ЗАПИТИ ЗАКЛАДІВ */}
-            {activeTab === 'places' && (
-              <>
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Запити на підтвердження закладів</h3>
-                {pendingPlaces.length === 0 ? (
-                  <p style={{ color: '#94a3b8' }}>Немає нових запитів на модерацію.</p>
-                ) : (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                        <th style={{ padding: '12px' }}>Заклад</th>
-                        <th style={{ padding: '12px' }}>Деталі</th>
-                        <th style={{ padding: '12px' }}>Рішення</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pendingPlaces.map(p => (
-                        <tr key={p.id} style={{ borderBottom: '1px solid #334155' }}>
-                          <td style={{ padding: '16px 12px', fontWeight: 'bold' }}>{p.name}</td>
-                          <td style={{ padding: '16px 12px', color: '#cbd5e1' }}>{p.category_name} • {p.region_name}</td>
-                          <td style={{ padding: '16px 12px', display: 'flex', gap: '8px' }}>
-                            <button onClick={() => handleApprovePlace(p.id, true)} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Прийняти</button>
-                            <button onClick={() => handleApprovePlace(p.id, false)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Відхилити</button>
-                          </td>
-                        </tr>
+              {/* ВКЛАДКА 2: ЗАПИТИ ЗАКЛАДІВ */}
+              {activeTab === 'places' && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px' }}>
+                    Запити на підтвердження закладів ({pendingPlaces.length})
+                  </h2>
+
+                  {pendingPlaces.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)' }}>
+                      Немає нових закладів, що очікують перевірки.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {pendingPlaces.map((pl) => (
+                        <div
+                          key={pl.id}
+                          style={{
+                            backgroundColor: 'var(--bg-page)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            padding: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '16px'
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: '700', fontSize: '16px' }}>{pl.name}</div>
+                            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                              📍 {pl.address}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => handleApprovePlace(pl.id, true)}
+                            >
+                              Підтвердити
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-danger"
+                              onClick={() => handleApprovePlace(pl.id, false)}
+                            >
+                              Відхилити
+                            </button>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                )}
-              </>
-            )}
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* ВКЛАДКА: КОРИСТУВАЧІ */}
-            {activeTab === 'users' && (
-              <>
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Управління користувачами</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                      <th style={{ padding: '12px' }}>Користувач</th>
-                      <th style={{ padding: '12px' }}>Email</th>
-                      <th style={{ padding: '12px' }}>Змінити роль</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map(u => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid #334155' }}>
-                        <td style={{ padding: '14px 12px', fontWeight: 'bold' }}>{u.full_name}</td>
-                        <td style={{ padding: '14px 12px', color: '#cbd5e1' }}>{u.email}</td>
-                        <td style={{ padding: '14px 12px' }}>
-                          <select
-                            value={u.role}
-                            onChange={(e) => handleChangeRole(u.id, e.target.value)}
-                            style={{ background: '#0f172a', color: '#fff', border: '1px solid #475569', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' }}
-                          >
-                            <option value="user">User</option>
-                            <option value="merchant">Merchant</option>
-                            <option value="admin">Admin 🛡️</option>
-                          </select>
-                        </td>
-                      </tr>
+              {/* ВКЛАДКА 3: КОРИСТУВАЧІ */}
+              {activeTab === 'users' && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px' }}>
+                    Керування користувачами ({users.length})
+                  </h2>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {users.map((u) => (
+                      <div
+                        key={u.id}
+                        style={{
+                          backgroundColor: 'var(--bg-page)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '16px',
+                          padding: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '16px',
+                          flexWrap: 'wrap'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: '700', fontSize: '15px' }}>
+                            {u.full_name || 'Користувач'}
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                            {u.email}
+                          </div>
+                        </div>
+
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                          style={{
+                            minWidth: '150px',
+                            backgroundColor: 'var(--bg-surface)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '10px',
+                            padding: '8px 12px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          <option value="user">user (Клієнт)</option>
+                          <option value="merchant">merchant (Бізнес)</option>
+                          <option value="admin">admin (Адмін)</option>
+                        </select>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              </>
-            )}
+                  </div>
+                </div>
+              )}
 
-            {/* ВКЛАДКА: МОДЕРАЦІЯ АКЦІЙ */}
-            {activeTab === 'promos' && (
-              <>
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '20px' }}>Модерація акцій платформи</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #334155', color: '#94a3b8' }}>
-                      <th style={{ padding: '12px' }}>Назва акції</th>
-                      <th style={{ padding: '12px' }}>Заклад</th>
-                      <th style={{ padding: '12px' }}>Знижка</th>
-                      <th style={{ padding: '12px' }}>Дія</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {promotions.map(p => (
-                      <tr key={p.id} style={{ borderBottom: '1px solid #334155' }}>
-                        <td style={{ padding: '14px 12px', fontWeight: 'bold' }}>{p.title}</td>
-                        <td style={{ padding: '14px 12px', color: '#818cf8' }}>{p.place_name}</td>
-                        <td style={{ padding: '14px 12px', color: '#f87171', fontWeight: 'bold' }}>{p.discount_value}</td>
-                        <td style={{ padding: '14px 12px' }}>
-                          <button onClick={() => handleDeletePromo(p.id)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              {/* ВКЛАДКА 4: МОДЕРАЦІЯ АКЦІЙ */}
+              {activeTab === 'promos' && (
+                <div>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px' }}>
+                    Модерація акцій ({promotions.length})
+                  </h2>
+
+                  {promotions.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)' }}>Активних акцій на платформі немає.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {promotions.map((pr) => (
+                        <div
+                          key={pr.id}
+                          style={{
+                            backgroundColor: 'var(--bg-page)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '16px',
+                            padding: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '16px'
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: '700', fontSize: '15px' }}>
+                              {pr.title}{' '}
+                              <span
+                                style={{
+                                  backgroundColor: '#ef4444',
+                                  color: '#fff',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  marginLeft: '6px'
+                                }}
+                              >
+                                {pr.discount_value}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                              🏢 {pr.place_name}
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="btn btn-danger"
+                            onClick={() => handleDeletePromo(pr.id)}
+                          >
                             Видалити
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </>
-            )}
-          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -1771,7 +2520,7 @@ function Footer() {
         <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <PromoLogo size={34} fontSize="22px" />
         </Link>
-        <div>© 2026 Promo. Усі права захищено. Платформа локальних знижок та акцій.</div>
+        <div>© 2026 PromoHUB. Усі права захищено. Платформа локальних знижок та акцій.</div>
         <div style={{ display: 'flex', gap: '20px' }}>
           <Link to="/" style={{ color: '#64748b', textDecoration: 'none' }}>Про нас</Link>
           <Link to="/merchant" style={{ color: '#64748b', textDecoration: 'none' }}>Для бізнесу</Link>
@@ -1800,6 +2549,9 @@ export default function App() {
   const [citySearchFilter, setCitySearchFilter] = useState('');
   const [customCityName, setCustomCityName] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
@@ -1815,10 +2567,6 @@ export default function App() {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
-  };
 
   const fetchRegions = () => {
     axios.get(`${API_URL}/regions`)
@@ -1868,35 +2616,34 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Header
-        user={currentUser}
-        onLogout={handleLogout}
-        activeRegion={activeRegion}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        onOpenRegionModal={() => setShowRegionModal(true)}
-        theme={theme}
-        toggleTheme={toggleTheme}
-      />
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header
+          user={currentUser}
+          onLogout={handleLogout}
+          activeRegion={activeRegion}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onOpenRegionModal={() => setShowRegionModal(true)}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
 
-      <main style={{ flex: 1, paddingBottom: '48px' }}>
-        <Routes>
-          <Route path="/" element={<MainPage user={currentUser} token={token} activeRegion={activeRegion} searchQuery={searchQuery} showToast={showToast} />} />
-          <Route path="/place/:id" element={<PlacePage token={token} user={currentUser} showToast={showToast} />} />
-          <Route path="/login" element={<AuthPage onAuthSuccess={handleAuthSuccess} showToast={showToast} />} />
-          <Route
-            path="/merchant"
-            element={currentUser?.role === 'merchant' || currentUser?.role === 'admin' ? <MerchantCabinet user={currentUser} token={token} showToast={showToast} /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/admin"
-            element={currentUser?.role === 'admin' ? <AdminPanel token={token} showToast={showToast} /> : <Navigate to="/" />}
-          />
-          <Route path="/favorites" element={<FavoritesPage token={token} user={currentUser} showToast={showToast} />} />
-          <Route path="/reset-password/:token" element={<ResetPasswordPage showToast={showToast} />} />
-        </Routes>
-      </main>
-      <Footer />
+        <main style={{ flex: 1 }}>
+          <Routes>
+            <Route path="/" element={<MainPage user={currentUser} token={token} activeRegion={activeRegion} searchQuery={searchQuery} showToast={showToast} />} />
+            <Route path="/place/:id" element={<PlacePage token={token} user={currentUser} showToast={showToast} />} />
+            <Route path="/login" element={<AuthPage onAuthSuccess={handleAuthSuccess} showToast={showToast} />} />
+            <Route path="/merchant" element={<MerchantCabinet />} />
+            <Route
+              path="/admin"
+              element={currentUser?.role === 'admin' ? <AdminPanel token={token} showToast={showToast} /> : <Navigate to="/" />}
+            />
+            <Route path="/favorites" element={<FavoritesPage token={token} user={currentUser} showToast={showToast} />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage showToast={showToast} />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
 
       {/* 📍 МОДАЛЬНЕ ВІКНО ВИБОРУ МІСТА */}
       {showRegionModal && (

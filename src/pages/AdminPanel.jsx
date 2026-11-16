@@ -33,7 +33,6 @@ export default function AdminPanel({ token }) {
             {/* Шапка */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '18px', fontWeight: 'bold' }}>
                 <PromoLogo size={28} fontSize="20px" />
-                <span style={{ color: '#475569' }}>|</span>
                 <span>Admin Panel</span>
             </div>
 

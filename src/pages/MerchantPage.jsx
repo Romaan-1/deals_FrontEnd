@@ -58,16 +58,16 @@ export default function MerchantCabinet({ token, user }) {
                         onClick={() => setActiveTab('promos')}
                         style={{ padding: '12px 16px', borderRadius: '10px', background: activeTab === 'promos' ? '#f1f5f9' : 'transparent', fontWeight: '600', cursor: 'pointer', color: activeTab === 'promos' ? '#6366f1' : '#475569', marginBottom: '8px' }}
                     >
-                        🔥 Мої акції
+                        Мої акції
                     </div>
                     <div style={{ padding: '12px 16px', color: '#94a3b8', cursor: 'not-allowed', marginBottom: '8px' }}>
-                        📊 Статистика
+                        Статистика
                     </div>
                     <div style={{ padding: '12px 16px', color: '#94a3b8', cursor: 'not-allowed', marginBottom: '8px' }}>
-                        ⚙️ Налаштування
+                        Налаштування
                     </div>
                     <div style={{ padding: '12px 16px', color: '#94a3b8', cursor: 'not-allowed' }}>
-                        💬 Відгуки та скарги
+                        Відгуки та скарги
                     </div>
                 </div>
 

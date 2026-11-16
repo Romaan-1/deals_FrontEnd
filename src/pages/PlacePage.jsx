@@ -62,10 +62,10 @@ export default function PlacePage({ token }) {
                 <div>
                     <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>{place.name}</h1>
                     <p style={{ color: '#64748b', marginTop: '4px' }}>
-                        ⭐ {place.rating || '4.8'} • 📍 {place.address}, {place.region_name}
+                        ⭐ {place.rating || '4.8'} • {place.address}, {place.region_name}
                     </p>
                 </div>
-                <button className="button" style={{ width: 'auto', background: '#8b5cf6' }}>❤️ В обране</button>
+                <button className="button" style={{ width: 'auto', background: '#8b5cf6' }}>В обране</button>
             </div>
 
             {/* Активні акції цього закладу */}
