@@ -45,13 +45,10 @@ export default function MerchantCabinet({ token, user }) {
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '24px' }}>
             {/* Шапка */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>
-                    <span style={{ color: '#6366f1' }}>Promo</span> | Кабінет закладу
-                </h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
-                    🥐 {user?.full_name || 'Львівські Круасани'}
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '18px', fontWeight: 'bold' }}>
+                <PromoLogo size={28} fontSize="20px" />
+                <span style={{ color: '#94a3b8' }}>|</span>
+                <span>Кабінет закладу</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' }}>

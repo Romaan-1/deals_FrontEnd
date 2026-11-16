@@ -6,6 +6,45 @@ import './index.css';
 const API_URL = 'http://localhost:5000/api';
 
 // ==========================================
+// ЛОГОТИП САЙТУ
+// ==========================================
+function PromoLogo({ size = 34, fontSize = '22px' }) {
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', userSelect: 'none' }}>
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="promoLogoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#6366f1" />
+            <stop offset="100%" stopColor="#4f46e5" />
+          </linearGradient>
+        </defs>
+        <rect width="36" height="36" rx="10" fill="url(#promoLogoGrad)" />
+        <path
+          d="M10.5 17.8V11.5C10.5 10.9477 10.9477 10.5 11.5 10.5H17.8C18.0652 10.5 18.3196 10.6054 18.5071 10.7929L25.2929 17.5787C25.8787 18.1645 25.8787 19.1142 25.2929 19.7L19.7 25.2929C19.1142 25.8787 18.1645 25.8787 17.5787 25.2929L10.7929 18.5071C10.6054 18.3196 10.5 18.0652 10.5 17.8Z"
+          fill="#ffffff"
+        />
+        <circle cx="14.5" cy="14.5" r="1.6" fill="#4f46e5" />
+        <circle cx="26.5" cy="9.5" r="2.5" fill="#fbbf24" />
+      </svg>
+
+      <span
+        style={{
+          fontSize,
+          fontWeight: '800',
+          letterSpacing: '-0.5px',
+          background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          lineHeight: 1
+        }}
+      >
+        Promo
+      </span>
+    </div>
+  );
+}
+
+// ==========================================
 // 1. ШАПКА САЙТУ (HEADER)
 // ==========================================
 function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onOpenRegionModal, theme, toggleTheme }) {
@@ -14,8 +53,8 @@ function Header({ user, onLogout, activeRegion, searchQuery, setSearchQuery, onO
   return (
     <header className="header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <Link to="/" style={{ textDecoration: 'none' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#6366f1', margin: 0 }}>Promo</h1>
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+          <PromoLogo size={34} fontSize="22px" />
         </Link>
 
         <div style={{ position: 'relative' }}>
@@ -115,14 +154,27 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
   }, []);
 
   useEffect(() => {
-    let url = `${API_URL}/promotions?`;
-    if (selectedCategory) url += `category_id=${selectedCategory}&`;
-    if (activeRegion && activeRegion.id) url += `region_id=${activeRegion.id}&`;
-    if (searchQuery && searchQuery.trim()) url += `search=${encodeURIComponent(searchQuery.trim())}&`;
+    const params = new URLSearchParams();
+    if (selectedCategory !== null) params.append('category_id', selectedCategory);
+    if (activeRegion) params.append('region_id', activeRegion.id);
+    if (searchQuery && searchQuery.trim() !== '') params.append('search', searchQuery.trim());
+
+    const queryString = params.toString();
+    const url = queryString ? `${API_URL}/promotions?${queryString}` : `${API_URL}/promotions`;
 
     axios.get(url)
-      .then(res => setPromotions(res.data))
-      .catch(err => console.error("Помилка завантаження акцій:", err));
+      .then(res => {
+        const data = Array.isArray(res.data) ? res.data : [];
+        if (selectedCategory !== null) {
+          setPromotions(data.filter(p => !p.category_id || Number(p.category_id) === Number(selectedCategory)));
+        } else {
+          setPromotions(data);
+        }
+      })
+      .catch(err => {
+        console.error('Помилка фільтрації акцій:', err);
+        setPromotions([]);
+      });
   }, [selectedCategory, activeRegion, searchQuery]);
 
   useEffect(() => {
@@ -245,7 +297,19 @@ function MainPage({ user, token, activeRegion, searchQuery, showToast }) {
       </h3>
 
       {promotions.length === 0 ? (
-        <p style={{ color: '#64748b', fontSize: '15px' }}>За вашим запитом акцій не знайдено.</p>
+        <div style={{ background: '#fff', padding: '32px', borderRadius: '20px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+          <p style={{ color: '#64748b', fontSize: '15px', marginBottom: '12px' }}>
+            У цій категорії або за вашим запитом акцій поки не знайдено.
+          </p>
+          {selectedCategory !== null && (
+            <button
+              onClick={() => setSelectedCategory(null)}
+              style={{ background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+            >
+              ✨ Показати всі акції
+            </button>
+          )}
+        </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px', marginTop: '16px' }}>
           {promotions.map(promo => {
@@ -446,6 +510,23 @@ function PlacePage({ token, user, showToast }) {
       .finally(() => setSubmitting(false));
   };
 
+  // 🗑️ Видалення відгуку
+  const handleDeleteReview = (reviewId) => {
+    if (!window.confirm('Видалити цей відгук?')) return;
+
+    axios.delete(`${API_URL}/reviews/${reviewId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(() => {
+        if (showToast) showToast('Відгук видалено', 'success');
+        fetchPlaceDetails(); // Оновлюємо список коментарів і рейтинг закладу
+      })
+      .catch(err => {
+        const errorMsg = err.response?.data?.error || 'Помилка при видаленні відгуку';
+        if (showToast) showToast(errorMsg, 'error');
+      });
+  };
+
   if (!placeData) return <div style={{ padding: '40px', textAlign: 'center' }}>Завантаження сторінки закладу...</div>;
 
   const { place, promotions } = placeData;
@@ -554,7 +635,7 @@ function PlacePage({ token, user, showToast }) {
                   onChange={e => setComment(e.target.value)}
                   rows={3}
                   required
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', resize: 'vertical' }}
+                  style={{ width: '100%', padding: '12px 5px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', resize: 'vertical' }}
                 />
               </div>
 
@@ -581,22 +662,58 @@ function PlacePage({ token, user, showToast }) {
           <p style={{ color: '#64748b' }}>Будьте першим, хто залишить відгук про цей заклад!</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {reviews.map(r => (
-              <div key={r.id} style={{ background: '#fff', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{r.full_name}</span>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </span>
+            {reviews.map(r => {
+              const isOwnReview = user && Number(user.id) === Number(r.user_id);
+              const canDelete = user && (user.role === 'admin' || isOwnReview);
+
+              return (
+                <div key={r.id} style={{ background: '#fff', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{r.full_name}</span>
+                      {isOwnReview && (
+                        <span style={{ fontSize: '11px', background: '#eef2ff', color: '#6366f1', padding: '2px 8px', borderRadius: '6px', fontWeight: '600' }}>
+                          Ваш відгук
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </span>
+
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReview(r.id)}
+                          style={{
+                            background: '#fef2f2',
+                            color: '#ef4444',
+                            border: '1px solid #fecaca',
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                          title={user.role === 'admin' && !isOwnReview ? 'Видалити як адміністратор' : 'Видалити свій відгук'}
+                        >
+                          🗑️ Видалити
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ color: '#fbbf24', fontSize: '14px', marginBottom: '6px' }}>
+                    {'⭐'.repeat(r.rating)} <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 'bold' }}>({r.rating}/5)</span>
+                  </div>
+                  <p style={{ color: '#334155', fontSize: '14px', margin: 0, lineHeight: '1.5' }}>
+                    {r.comment}
+                  </p>
                 </div>
-                <div style={{ color: '#fbbf24', fontSize: '14px', marginBottom: '6px' }}>
-                  {'⭐'.repeat(r.rating)} <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 'bold' }}>({r.rating}/5)</span>
-                </div>
-                <p style={{ color: '#334155', fontSize: '14px', margin: 0, lineHeight: '1.5' }}>
-                  {r.comment}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -1651,8 +1768,8 @@ function Footer() {
         flexWrap: 'wrap',
         gap: '16px'
       }}>
-        <Link to="/" style={{ fontWeight: '800', color: '#6366f1', fontSize: '20px', textDecoration: 'none' }}>
-          Promo
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+          <PromoLogo size={34} fontSize="22px" />
         </Link>
         <div>© 2026 Promo. Усі права захищено. Платформа локальних знижок та акцій.</div>
         <div style={{ display: 'flex', gap: '20px' }}>

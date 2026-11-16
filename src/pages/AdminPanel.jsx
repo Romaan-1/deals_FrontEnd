@@ -31,11 +31,10 @@ export default function AdminPanel({ token }) {
     return (
         <div style={{ minHeight: '100vh', background: '#0f172a', color: '#f8fafc', padding: '24px' }}>
             {/* Шапка */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>
-                    <span style={{ color: '#818cf8' }}>Promo</span> | Admin Panel
-                </h2>
-                <div style={{ fontWeight: 'bold', color: '#94a3b8' }}>SuperAdmin 🛡️</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '18px', fontWeight: 'bold' }}>
+                <PromoLogo size={28} fontSize="20px" />
+                <span style={{ color: '#475569' }}>|</span>
+                <span>Admin Panel</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' }}>
