@@ -1,16 +1,81 @@
-# React + Vite
+# 🏷️ Promo — Платформа локальних знижок та акцій
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**Promo** — це повноцінна вебплатформа (Full-Stack) для пошуку, публікації та модерації локальних знижок, купонів і акційних пропозицій закладів у різних містах України.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 📋 Зміст
+- [Основні можливості](#-основні-можливості)
+- [Технологічний стек](#-технологічний-стек)
+- [Архітектура та база даних](#-архітектура-та-база-даних)
+- [Встановлення та запуск](#-встановлення-та-запуск)
+- [Ролі та тестові акаунти](#-ролі-та-тестові-акаунти)
+- [API Документація (Swagger)](#-api-документація-swagger)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Основні можливості
 
-## Expanding the Oxlint configuration
+### 👤 Для покупців (`user`) та гостей
+- Перегляд каталогу гарячих акцій та популярних закладів.
+- Фільтрація пропозицій за містами (регіонами) та категоріями.
+- Живий пошук акцій за назвою, брендом або описом.
+- Перегляд сторінки закладу з активними акціями, адресою, рейтингом та відгуками.
+- Збереження акцій до розділу **«Обране»**.
+- Підтримка світлої та темної теми інтерфейсу (збереження вибору в `localStorage`).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### 🏢 Для бізнесу (`merchant`)
+- Окремий кабінет бізнесу (**Merchant Panel**) зі статистикою закладів, активних акцій та частки на платформі.
+- Реєстрація нових закладів із завантаженням логотипу/банера.
+- Створення та видалення акційних пропозицій із зображеннями, розміром знижки та зовнішніми посиланнями.
+
+### 🛡️ Для адміністратора (`admin`)
+- Панель адміністратора (**Admin Panel**) із загальною аналітикою системи.
+- Модерація заявок нових закладів (підтвердження або відхилення публікації).
+- Модерація всіх акцій платформи.
+- Керування користувачами та зміна їхніх ролей (`user`, `merchant`, `admin`).
+
+---
+
+## 🛠️ Технологічний стек
+
+**Frontend:**
+- React (Vite)
+- React Router DOM
+- Axios
+- CSS3 (адаптивна сітка, CSS-змінні для Light / Dark mode)
+
+**Backend:**
+- Node.js + Express.js
+- RESTful API
+- Swagger UI (`swagger-ui-express`)
+- Multer (завантаження та збереження зображень)
+- JWT (`jsonwebtoken`) + `bcrypt` (автентифікація, хешування паролів, RBAC)
+- Google OAuth автентифікація
+
+**База даних:**
+- PostgreSQL
+
+---
+
+## 🗄️ Архітектура та база даних
+
+Проєкт побудований за архітектурним стилем **модульного моноліту (Modular Monolith)** із розділенням на клієнтську частину, REST API та реляційну БД.
+
+**Основні таблиці PostgreSQL:**
+- `users` — облікові записи користувачів та їхні ролі (`user`, `merchant`, `admin`).
+- `regions` — довідник міст/регіонів.
+- `categories` — категорії закладів та акцій.
+- `places` — заклади, прив'язані до власника (`merchant_id`), міста та категорії.
+- `promotions` — акційні пропозиції закладів.
+- `favorites` — обрані акції користувачів.
+- `reviews` — відгуки та оцінки закладів.
+
+---
+
+## ⚙️ Встановлення та запуск
+
+### 1. Клонування репозиторію
+```bash
+git clone [https://github.com/your-username/promo.git](https://github.com/your-username/promo.git)
+cd promo
