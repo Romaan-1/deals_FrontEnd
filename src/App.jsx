@@ -690,7 +690,31 @@ function PlacePage({ token, user, showToast }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
           {promotions.map(promo => (
+
             <div key={promo.id} style={{ background: '#fff', borderRadius: '20px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              {/* Фото акції (якщо є URL або завантажений файл) */}
+              {typeof promo.image_url === 'string' &&
+                (promo.image_url.startsWith('http') || promo.image_url.startsWith('/uploads')) && (
+                  <div
+                    style={{
+                      height: '150px',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      marginBottom: '14px',
+                      backgroundColor: 'var(--bg-page)'
+                    }}
+                  >
+                    <img
+                      src={
+                        promo.image_url.startsWith('/uploads')
+                          ? `http://localhost:5000${promo.image_url}`
+                          : promo.image_url
+                      }
+                      alt={promo.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                )}
               <span style={{ background: '#ef4444', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
                 {promo.discount_value}
               </span>
