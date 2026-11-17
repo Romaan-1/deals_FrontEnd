@@ -1,0 +1,575 @@
+/* =========================================================
+   1. СКИДАННЯ ТА ЗМІННІ КОЛЬОРІВ (СВІТЛА І ТЕМНА ТЕМА)
+   ========================================================= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-alt: #f1f5f9;
+  --bg-header: rgba(255, 255, 255, 0.92);
+  --bg-input: #f1f5f9;
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+
+  --border-color: #e2e8f0;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --danger: #ef4444;
+  --success: #10b981;
+
+  /* Кнопки верхньої навігації (Світла тема) */
+  --nav-text: #334155;
+  --nav-text-active: #0f172a;
+  --nav-hover-bg: rgba(15, 23, 42, 0.06);
+  --nav-active-bg: #e2e8f0;
+  --nav-active-border: #cbd5e1;
+}
+
+/* Підтримка всіх варіантів класів/атрибутів темної теми */
+body.dark-mode,
+body.dark,
+html.dark body,
+html.dark-mode body,
+[data-theme="dark"] body,
+.dark-mode,
+.dark-theme {
+  --bg-page: #0b1120;
+  --bg-surface: #151e32;
+  --bg-surface-alt: #1e293b;
+  --bg-header: rgba(15, 23, 42, 0.92);
+  --bg-input: #1e293b;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+
+  --border-color: #293548;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+
+  /* Кнопки верхньої навігації (Темна тема) */
+  --nav-text: #cbd5e1;
+  --nav-text-active: #ffffff;
+  --nav-hover-bg: rgba(255, 255, 255, 0.07);
+  --nav-active-bg: #090e1a;
+  --nav-active-border: #334155;
+}
+
+html,
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* =========================================================
+   2. ШАПКА САЙТУ (HEADER) ТА КНОПКИ НАВІГАЦІЇ
+   ========================================================= */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--bg-header);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 24px;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.header-search {
+  background-color: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  width: 260px;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.header-search::placeholder {
+  color: var(--text-muted);
+}
+
+.header-search:focus {
+  border-color: var(--accent) !important;
+}
+
+/* Кнопки у шапці: без рамок і одного кольору -> заповнена плашка при кліку */
+.nav-pill-btn {
+  appearance: none;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: var(--nav-text) !important;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-pill-btn:hover {
+  background-color: var(--nav-hover-bg) !important;
+  color: var(--nav-text-active) !important;
+}
+
+.nav-pill-btn:active,
+.nav-pill-btn.active {
+  background-color: var(--nav-active-bg) !important;
+  border-color: var(--nav-active-border) !important;
+  color: var(--nav-text-active) !important;
+  font-weight: 600;
+}
+
+.nav-user-name {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   3. ГОРИЗОНТАЛЬНА СТРІЧКА КАТЕГОРІЙ
+   ========================================================= */
+.categories-scroll {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px 2px;
+  margin-bottom: 24px;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.categories-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.category-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 10px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.category-chip:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+/* =========================================================
+   4. СІТКИ (GRID) ДЛЯ АКЦІЙ ТА ПОПУЛЯРНИХ ЗАКЛАДІВ
+   ========================================================= */
+.grid,
+.promotions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.places-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* =========================================================
+   5. КАРТКИ АКЦІЙ ТА ЗАКЛАДІВ (СВІТЛА ТА ТЕМНА ТЕМА)
+   ========================================================= */
+.card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 280px !important;
+  height: auto !important;
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-radius: 20px !important;
+  padding: 20px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  position: relative !important;
+  border: 1px solid var(--border-color) !important;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.25s ease,
+    background-color 0.25s ease !important;
+  will-change: transform;
+}
+
+.card:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 14px 28px -6px rgba(99, 102, 241, 0.18) !important;
+  border-color: var(--accent) !important;
+}
+
+.card img {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card:hover img {
+  transform: scale(1.04);
+}
+
+/* =========================================================
+   6. ЗАГАЛЬНІ КНОПКИ, ФОРМИ, ТАБЛИЦІ ТА МОДАЛЬНІ ВІКНА
+   ========================================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface-alt);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: #ffffff;
+}
+
+input,
+select,
+textarea {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+}
+
+/* Модальні вікна (закриті за замовчуванням, якщо керуються через React) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-box {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================
+   7. ПЕРЕКРИТТЯ ІНЛАЙНОВИХ БІЛИХ БЛОКІВ У ТЕМНІЙ ТЕМІ
+   ========================================================= */
+body.dark-mode footer,
+body.dark-mode div[style*="background: #fff"],
+body.dark-mode div[style*="background: rgb(255, 255, 255)"],
+body.dark-mode div[style*="background-color: #fff"],
+body.dark-mode div[style*="background-color: rgb(255, 255, 255)"],
+body.dark-mode div[style*="background: #f8fafc"],
+body.dark-mode div[style*="background: rgb(248, 250, 252)"],
+body.dark-mode div[style*="background: #f1f5f9"],
+body.dark-mode div[style*="background: rgb(241, 245, 249)"] {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+body.dark-mode [style*="color: #1e293b"],
+body.dark-mode [style*="color: rgb(30, 41, 59)"],
+body.dark-mode [style*="color: #0f172a"],
+body.dark-mode [style*="color: rgb(15, 23, 42)"],
+body.dark-mode [style*="color: #334155"],
+body.dark-mode [style*="color: rgb(51, 65, 85)"] {
+  color: var(--text-primary) !important;
+}
+
+body.dark-mode [style*="color: #64748b"],
+body.dark-mode [style*="color: rgb(100, 116, 139)"],
+body.dark-mode [style*="color: #475569"],
+body.dark-mode [style*="color: rgb(71, 85, 105)"] {
+  color: var(--text-muted) !important;
+}
+
+body.dark-mode button[style*="background: #fff"],
+body.dark-mode button[style*="background: rgb(255, 255, 255)"],
+body.dark-mode button[style*="background: #f1f5f9"],
+body.dark-mode button[style*="background: rgb(241, 245, 249)"] {
+  background-color: var(--bg-surface-alt) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Футер */
+footer {
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-muted);
+  padding: 20px 24px;
+  margin-top: 48px;
+}
+
+/* =========================================================
+   МОДАЛЬНЕ ВІКНО ВИБОРУ МІСТА ТА ІНШІ МОДАЛКИ
+   ========================================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+/* Картка-контейнер всередині модального вікна */
+.modal-overlay>div,
+.modal-content,
+.modal-box,
+.modal {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 24px !important;
+  padding: 24px !important;
+  width: 100% !important;
+  max-width: 420px !important;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.45) !important;
+  animation: modalFadeIn 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-overlay h2,
+.modal-overlay h3 {
+  color: var(--text-primary) !important;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* Поле пошуку міста та додавання нового міста */
+.modal-overlay input {
+  background-color: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 14px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.modal-overlay input:focus {
+  border-color: var(--accent) !important;
+}
+
+/* Тонкий охайний скролбар для списку міст */
+.modal-overlay div::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-overlay div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-overlay div::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+}
+
+.modal-overlay div::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.7);
+}
+
+/* Кнопки міст та кнопка «Закрити» у темній темі */
+body.dark-mode .modal-overlay button[style*="background: #fff"],
+body.dark-mode .modal-overlay button[style*="background: rgb(255, 255, 255)"],
+body.dark-mode .modal-overlay button[style*="background: #f1f5f9"],
+body.dark-mode .modal-overlay button[style*="background: rgb(241, 245, 249)"] {
+  background-color: var(--bg-surface-alt) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* Плавний ховер на кнопки міст */
+.modal-overlay button {
+  border-radius: 14px !important;
+  transition: transform 0.15s ease, filter 0.2s ease, background-color 0.2s ease !important;
+}
+
+.modal-overlay button:hover {
+  filter: brightness(0.97);
+}
+
+body.dark-mode .modal-overlay button:hover {
+  filter: brightness(1.1);
+}
+
+/* Притискання футера до самого низу екрана */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+footer {
+  position: static !important;
+  margin-top: auto !important;
+  width: 100%;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-muted);
+  padding: 20px 24px;
+}
+
+/* Вирівнювання логотипу та пошуку по одній горизонтальній осі */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-link,
+.logo-link>div,
+.logo-link svg {
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+  margin: 0 !important;
+}
+
+/* Фікс випадаючих списків, інпутів та кнопок в обох темах */
+select,
+option {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+body.dark-mode select,
+body.dark-mode option {
+  background-color: #151e32;
+  color: #f8fafc;
+}
