@@ -545,6 +545,7 @@ function PlacePage({ token, user, showToast }) {
     fetchPlaceDetails();
   }, [id]);
 
+
   // 📝 Відправка нового відгуку
   const handleAddReview = (e) => {
     e.preventDefault();
@@ -591,6 +592,17 @@ function PlacePage({ token, user, showToast }) {
   if (!placeData) return <div style={{ padding: '40px', textAlign: 'center' }}>Завантаження сторінки закладу...</div>;
 
   const { place, promotions } = placeData;
+
+  if (!place) return <div style={{ padding: '40px', textAlign: 'center' }}>Завантаження...</div>;
+
+  const isImg =
+    typeof place.logo_url === 'string' &&
+    (place.logo_url.startsWith('http') || place.logo_url.startsWith('/uploads'));
+
+  const fullImgUrl =
+    isImg && place.logo_url.startsWith('/uploads')
+      ? `http://localhost:5000${place.logo_url}`
+      : place.logo_url;
 
   return (
     <div className="container" style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 16px' }}>
@@ -833,241 +845,215 @@ function PlacePage({ token, user, showToast }) {
 // ==========================================
 // 4. СТОРІНКА АВТОРИЗАЦІЇЗ ВАЛІДАЦІЄЮ
 // ==========================================
-function AuthPage({ onAuthSuccess, showToast }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  // Отримуємо переданий режим з кнопок шапки
-  const [isRegister, setIsRegister] = useState(() => {
-    return location.state?.isRegister !== undefined ? location.state.isRegister : false;
-  });
-
-  const [accountType, setAccountType] = useState('user');
+function AuthPage({ initialMode = 'login', onLogin, setUser }) {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState('user');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [generalError, setGeneralError] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Всередині компонента AuthPage:
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-
-  const handleForgotSubmit = (e) => {
-    e.preventDefault();
-    axios.post(`${API_URL}/auth/forgot-password`, { email: forgotEmail })
-      .then(res => {
-        showToast(res.data.message, 'success');
-        setShowForgotModal(false);
-        setForgotEmail('');
-      })
-      .catch(err => showToast(err.response?.data?.error || 'Помилка відправки', 'error'));
-  };
-
-  // ... У формі авторизації (коли !isRegister) під полем пароля додайте кнопку:
-  {
-    !isRegister && (
-      <div style={{ textAlign: 'right', marginTop: '-6px', marginBottom: '8px' }}>
-        <span
-          onClick={() => setShowForgotModal(true)}
-          style={{ fontSize: '12px', color: '#6366f1', fontWeight: 'bold', cursor: 'pointer' }}
-        >
-          Забули пароль?
-        </span>
-      </div>
-    )
-  }
-
-  // ... У кінці повернення JSX AuthPage додайте модальне вікно:
-  {
-    showForgotModal && (
-      <div className="modal-overlay">
-        <div className="modal" style={{ maxWidth: '400px', padding: '24px', borderRadius: '20px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Відновлення пароля</h3>
-          <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
-            Введіть email, прив'язаний до акаунту. Ми надішлемо посилання для відновлення.
-          </p>
-
-          <form onSubmit={handleForgotSubmit}>
-            <input
-              type="email"
-              className="input-field"
-              placeholder="Ваш e-mail..."
-              value={forgotEmail}
-              onChange={e => setForgotEmail(e.target.value)}
-              required
-            />
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <button
-                type="submit"
-                style={{ flex: 1, background: '#6366f1', color: '#fff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                Надіслати
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setShowForgotModal(false)}
-                style={{ padding: '10px 16px', borderRadius: '10px' }}
-              >
-                Скасувати
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    )
-  }
-
-  // Реагуємо на зміну режиму при кліках у шапці
+  // Автоматично перемикаємо режим, якщо перейшли за URL (/login або /register)
   useEffect(() => {
-    if (location.state?.isRegister !== undefined) {
-      setIsRegister(location.state.isRegister);
+    if (location.pathname === '/register' || location.pathname === '/signup') {
+      setIsLogin(false);
+    } else if (location.pathname === '/login') {
+      setIsLogin(true);
     }
-  }, [location.state]);
+  }, [location.pathname]);
 
-  const validateEmail = (val) => {
-    setEmail(val);
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!val) {
-      setEmailError('Email є обов\'язковим');
-    } else if (!emailRegex.test(val)) {
-      setEmailError('Введіть коректну e-mail адресу (напр. user@gmail.com)');
-    } else {
-      setEmailError('');
-    }
+  const handleAuthSuccess = (token, userData) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    if (onLogin) onLogin(userData);
+    if (setUser) setUser(userData);
+    navigate(userData.role === 'merchant' ? '/merchant' : '/');
   };
 
-  const validatePassword = (val) => {
-    setPassword(val);
-    if (!val) {
-      setPasswordError('Пароль є обов\'язковим');
-    } else if (val.length < 6) {
-      setPasswordError('Пароль повинен містити щонайменше 6 символів');
-    } else {
-      setPasswordError('');
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setGeneralError('');
+    setError('');
+    setLoading(true);
 
-    if (emailError || passwordError || !email || !password) {
-      setGeneralError('Будь ласка, виправте помилки у формі перед відправкою');
-      return;
+    try {
+      if (isLogin) {
+        const res = await axios.post('http://localhost:5000/api/auth/login', {
+          email,
+          password
+        });
+        handleAuthSuccess(res.data.token, res.data.user);
+      } else {
+        await axios.post('http://localhost:5000/api/auth/register', {
+          full_name: fullName,
+          email,
+          password,
+          role
+        });
+
+        // Одразу входимо після успішної реєстрації
+        const loginRes = await axios.post('http://localhost:5000/api/auth/login', {
+          email,
+          password
+        });
+        handleAuthSuccess(loginRes.data.token, loginRes.data.user);
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+        (isLogin
+          ? 'Невірний email або пароль'
+          : 'Помилка реєстрації. Можливо, ця пошта вже використовується.')
+      );
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const endpoint = isRegister ? '/auth/register' : '/auth/login';
-    const payload = isRegister
-      ? { email, password, full_name: fullName, role: accountType }
-      : { email, password };
-
-    axios.post(`${API_URL}${endpoint}`, payload)
-      .then(res => {
-        onAuthSuccess(res.data.user, res.data.token);
-        showToast('Успішний вхід у систему!', 'success');
-        navigate('/');
-      })
-      .catch(err => setGeneralError(err.response?.data?.error || 'Помилка авторизації'));
+  const switchMode = (targetLogin) => {
+    setError('');
+    setIsLogin(targetLogin);
+    navigate(targetLogin ? '/login' : '/register');
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style={{ background: '#fff', padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>
-          {isRegister ? 'Створити акаунт' : 'Вхід у систему'}
+    <div
+      style={{
+        minHeight: 'calc(100vh - 150px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px 16px'
+      }}
+    >
+      <div
+        className="auth-card"
+        style={{
+          width: '100%',
+          maxWidth: '420px',
+          backgroundColor: 'var(--bg-surface)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '24px',
+          padding: '36px 32px',
+          boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.14)'
+        }}
+      >
+        <h2 style={{ fontSize: '26px', fontWeight: '800', textAlign: 'center', marginBottom: '6px' }}>
+          {isLogin ? 'Вхід у систему' : 'Реєстрація'}
         </h2>
-        <p style={{ color: '#64748b', fontSize: '14px', textAlign: 'center', marginBottom: '24px' }}>
+        <p
+          style={{
+            fontSize: '14px',
+            color: 'var(--text-muted)',
+            textAlign: 'center',
+            marginBottom: '26px'
+          }}
+        >
           Платформа локальних знижок та акцій
         </p>
 
-        {isRegister && (
-          <div style={{ display: 'flex', background: '#f8fafc', padding: '4px', borderRadius: '12px', marginBottom: '20px' }}>
-            <button
-              type="button"
-              style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', background: accountType === 'user' ? '#fff' : 'transparent', fontWeight: '600', cursor: 'pointer', boxShadow: accountType === 'user' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
-              onClick={() => setAccountType('user')}
-            >
-              Користувач
-            </button>
-            <button
-              type="button"
-              style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', background: accountType === 'merchant' ? '#fff' : 'transparent', fontWeight: '600', cursor: 'pointer', boxShadow: accountType === 'merchant' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
-              onClick={() => setAccountType('merchant')}
-            >
-              Заклад / Бізнес
-            </button>
+        {error && (
+          <div
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.12)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              fontSize: '13px',
+              marginBottom: '16px',
+              textAlign: 'center'
+            }}
+          >
+            {error}
           </div>
         )}
 
-        {generalError && <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px', textAlign: 'center', fontWeight: 'bold' }}>{generalError}</p>}
-
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {isRegister && (
-            <div>
-              <input
-                className="input-field"
-                placeholder={accountType === 'merchant' ? "Назва компанії / закладу" : "ПІБ"}
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                required
-              />
-            </div>
+          {!isLogin && (
+            <input
+              type="text"
+              placeholder="Ім'я або назва закладу"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              style={{ width: '100%' }}
+            />
           )}
 
-          <div>
-            <input
-              className="input-field"
-              type="email"
-              placeholder="Email (напр. name@domain.com)"
-              value={email}
-              onChange={e => validateEmail(e.target.value)}
-              style={{ borderColor: emailError ? '#ef4444' : '#cbd5e1' }}
-              required
-            />
-            {emailError && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{emailError}</span>}
-          </div>
+          <input
+            type="email"
+            placeholder="Електронна пошта"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ width: '100%' }}
+          />
 
-          <div>
-            <input
-              className="input-field"
-              type="password"
-              placeholder="Пароль (мін. 6 символів)"
-              value={password}
-              onChange={e => validatePassword(e.target.value)}
-              style={{ borderColor: passwordError ? '#ef4444' : '#cbd5e1' }}
-              required
-            />
-            {passwordError && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{passwordError}</span>}
-          </div>
+          <input
+            type="password"
+            placeholder="Пароль"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ width: '100%' }}
+          />
+
+          {!isLogin && (
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              style={{ width: '100%', cursor: 'pointer' }}
+            >
+              <option value="user">Я покупець (шукаю акції)</option>
+              <option value="merchant">Я бізнес / заклад (хочу додавати акції)</option>
+            </select>
+          )}
 
           <button
             type="submit"
-            disabled={!!emailError || !!passwordError}
+            disabled={loading}
+            className="btn btn-primary"
             style={{
-              background: (emailError || passwordError) ? '#94a3b8' : '#6366f1',
-              color: '#fff',
-              border: 'none',
-              padding: '12px',
-              borderRadius: '12px',
-              fontWeight: 'bold',
-              cursor: (emailError || passwordError) ? 'not-allowed' : 'pointer',
-              marginTop: '8px'
+              width: '100%',
+              padding: '13px',
+              borderRadius: '14px',
+              fontSize: '15px',
+              marginTop: '6px'
             }}
           >
-            {isRegister ? 'Зареєструватися' : 'Увійти'}
+            {loading ? 'Зачекайте...' : isLogin ? 'Увійти' : 'Зареєструватися'}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: '#64748b' }}>
-          {isRegister ? 'Вже є акаунт? ' : 'Немає акаунту? '}
-          <span style={{ color: '#6366f1', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => { setIsRegister(!isRegister); setGeneralError(''); }}>
-            {isRegister ? 'Увійти' : 'Зареєструватися'}
-          </span>
+        <p
+          style={{
+            marginTop: '20px',
+            textAlign: 'center',
+            fontSize: '14px',
+            color: 'var(--text-muted)'
+          }}
+        >
+          {isLogin ? 'Немає акаунту? ' : 'Вже маєте акаунт? '}
+          <button
+            type="button"
+            onClick={() => switchMode(!isLogin)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: '#6366f1',
+              fontWeight: '700',
+              fontSize: '14px',
+              cursor: 'pointer'
+            }}
+          >
+            {isLogin ? 'Зареєструватися' : 'Увійти'}
+          </button>
         </p>
       </div>
     </div>
@@ -2632,7 +2618,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<MainPage user={currentUser} token={token} activeRegion={activeRegion} searchQuery={searchQuery} showToast={showToast} />} />
             <Route path="/place/:id" element={<PlacePage token={token} user={currentUser} showToast={showToast} />} />
-            <Route path="/login" element={<AuthPage onAuthSuccess={handleAuthSuccess} showToast={showToast} />} />
+            <Route path="/login" element={<AuthPage initialMode="login" onLogin={setCurrentUser} />} />
+            <Route path="/register" element={<AuthPage initialMode="register" onLogin={setCurrentUser} />} />
             <Route path="/merchant" element={<MerchantCabinet />} />
             <Route
               path="/admin"
